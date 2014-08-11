@@ -16,7 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -30,48 +32,204 @@ import org.jooq.SortOrder;
  */
 public class JTreeCube {
 
-    public static JTreeCube build(File file, List<String> schema) throws FileNotFoundException {
-        return null;
-    }
-
-    public static JTreeCube build(Result<Record> records, List<String> schema) {
-        JTreeCube cube = new JTreeCube(schema);
-        records.forEach(record -> {
-            cube.add(itemFromRecord(record, schema));
-        });
-        return cube;
-    }
-
-    public static class JTreeCubeBuilder {
-
-        private final JTreeCube cube;
-
-        public JTreeCubeBuilder(List<String> schema) {
-            this.cube = new JTreeCube(schema);
-        }
-
-        public JTreeCubeBuilder add(Object... values) {
-            cube.add(values);
-            return this;
-        }
-
-        public JTreeCube done() {
-            return cube;
-        }
-
-    }
-
-    public static JTreeCubeBuilder build(List<String> schema) {
-        return new JTreeCubeBuilder(schema);
-    }
-
-    private static Object[] itemFromRecord(Record record, List<String> schema) {
-        return schema.parallelStream().map(key -> {
-            return record.getValue(key);
-        }).toArray();
-    }
     private final List<String> schema;
     private final JTreeCubeNode root = new JTreeCubeNode();
+
+    private JTreeCube(List<String> schema) {
+        this.schema = schema;
+    }
+
+    private void add(Object[] item) {
+        if (item.length != schema.size()) {
+            throw new IllegalArgumentException();
+        }
+        if (root.count.get() % 25000 == 0) {
+            System.out.println(String.format("%d items in tree", root.count.get()));
+        }
+        root.place(schema, item, 0);
+    }
+
+    public long size() {
+        return root.count.get();
+    }
+
+    public ResultNode count(String... groupBy) {
+        return count(new ArrayList<>(), groupBy);
+    }
+
+    public ResultNode count(List<Filter> filter, String... groupBy) {
+        // check that we only aggregate based on the order defined in the schema
+        final List<String> groupByList = Arrays.asList(groupBy);
+        int[] positions = groupByList.stream().mapToInt(s -> schema.indexOf(s)).toArray();
+        if (positions.length > 1) {
+            for (int i = 1; i < positions.length; i++) {
+                if (positions[i - 1] > positions[i]) {
+                    throw new UnsupportedOperationException();
+                }
+            }
+        }
+        // aggregate element count
+        return root.count(groupByList, filter);
+    }
+
+    @Override
+    public String toString() {
+        return root.toString();
+    }
+    
+    public static class ResultNode {
+
+        public final Object value;
+        public AtomicLong count;
+        public final Map<Object, ResultNode> children = Collections.synchronizedMap(new HashMap<>());
+        private final String key;
+
+        public ResultNode(String key, Object value) {
+            this.key = key;
+            this.value = value;
+            this.count = new AtomicLong(0);
+        }
+        
+        public ResultNode(String key, Object value, long count) {
+            this.key = key;
+            this.value = value;
+            this.count = new AtomicLong(count);
+        }
+
+        public ResultNode add(String key, Object value) {
+            ResultNode child;
+            if (!this.children.containsKey(value)) {
+                child = new ResultNode(key, value);
+                this.children.put(value, child);
+            } else {
+                child = this.children.get(value);
+            }
+            return child;
+        }
+        
+        public ResultNode add(String key, Object value, long count) {
+            ResultNode child = add(key, value);
+            child.count.addAndGet(count);
+            return child;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 5;
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final ResultNode other = (ResultNode) obj;
+            if (!Objects.equals(this.value, other.value)) {
+                return false;
+            }
+            if (this.count.get() != other.count.get()) {
+                return false;
+            }
+            if (!this.children.equals(other.children)) {
+                return false;
+            }
+            return true;
+        }
+
+        public Stream<ResultNode> getChildren(int limit) {
+            return getChildren().limit(limit);
+        }
+
+        public Stream<ResultNode> getChildren() {
+            return children.values().stream().sorted((a, b) -> {
+                if (b.count.get() == a.count.get()) {
+                    return 0;
+                }
+                return (b.count.get() > a.count.get()) ? 1 : -1;
+            });
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder str = new StringBuilder();
+            toString(str, 0);
+            return str.toString();
+        }
+
+        public void toString(StringBuilder str, int indent) {
+            for (int i = 0; i < indent; i++) {
+                str.append("  ");
+            }
+            str.append(String.format("%s:%s:%d", key, value, count.get()));
+            getChildren().forEach(c -> {
+                str.append("\n");
+                c.toString(str, indent + 1);
+            });
+        }
+
+    }
+
+    public enum Operation {
+
+        EQ,
+        NEQ,
+        IN,
+        NIN,
+        GT,
+        GTE,
+        LT,
+        LTE;
+
+    }
+
+    public static class Filter {
+
+        private final Predicate<Object> predicate;
+        private final String key;
+
+        public Filter(String key, Operation operation, Object... expected) {
+            this.key = key;
+            final Matcher matcher = getMatcher(operation, expected);
+            this.predicate = (Object t) -> matcher.matches(t);
+        }
+
+        private Matcher getMatcher(Operation operation, Object... expected) {
+
+            Matcher m = null;
+            switch (operation) {
+                case EQ:
+                    m = Matchers.equalTo(expected[0]);
+                    break;
+                case NEQ:
+                    m = Matchers.not(Matchers.equalTo(expected[0]));
+                    break;
+                case GT:
+                    m = Matchers.greaterThan((Double) expected[0]);
+                    break;
+                case GTE:
+                    m = Matchers.greaterThanOrEqualTo((Double) expected[0]);
+                    break;
+                case LT:
+                    m = Matchers.lessThan((Double) expected[0]);
+                    break;
+                case LTE:
+                    m = Matchers.lessThanOrEqualTo((Double) expected[0]);
+                    break;
+                case IN:
+                    m = Matchers.isIn(expected);
+                    break;
+                case NIN:
+                    m = Matchers.not(Matchers.isIn(expected));
+                    break;
+            }
+            return m;
+        }
+
+    }
 
     private class JTreeCubeNode {
 
@@ -108,194 +266,110 @@ public class JTreeCube {
             c.place(schema, item, depth + 1);
         }
 
-        private void aggregate(String field, List<Filter> filter, ArrayList<Pair<String, Long>> list) {
-            Filter filterThisLevel = null;
-            try {
-                // find relevant filter
-                filterThisLevel = filter.stream().filter(p -> p.key == this.key).findFirst().get();
-                // remove from filter set
-                filter.remove(filterThisLevel);
-            } catch (NoSuchElementException ex) {
-                //
-            }
-
-            // check filter applies
+        public Set<Object> getValues() {
+            return children.keySet();
         }
 
-        private ResultNode count(List<String> groupBy) {
-            return count(groupBy, new ResultNode("", null, count.get()));
-        }
-
-        private ResultNode count(List<String> groupBy, ResultNode node) {
-            if (!groupBy.isEmpty()) {
-                final List<String> reduced = new ArrayList<>(groupBy);
-                final boolean addNode = reduced.contains(key);
-                if (addNode) {
-                    reduced.remove(key);
-                }
-                children.entrySet().forEach(e -> {
-                    ResultNode n = node;
-                    if (addNode) 
-                        n = node.add(key, e.getKey(), e.getValue().count.get());
-                    e.getValue().count(reduced, n);
-                });
-            }
+        private ResultNode count(List<String> groupBy, List<Filter> filter) {
+            Map<String, Predicate<Object>> predicates = new HashMap<>();
+            filter.forEach(f -> {
+                predicates.put(f.key, f.predicate);
+            });
+            ResultNode node = new ResultNode("", null);
+            node.count.set(count(groupBy, node, predicates));
             return node;
         }
 
-    }
+        private long count(List<String> groupBy, ResultNode node, final Map<String, Predicate<Object>> predicates) {
+            final boolean addNode = groupBy.contains(key);
+            long sum = children.entrySet().parallelStream().filter(e -> {
+                if (!predicates.containsKey(key)) {
+                    return true;
+                }
+                return predicates.get(key).test(e.getKey());
+            }).mapToLong(e -> {
+                ResultNode n = node;                
+                if (addNode) 
+                    n = node.add(key, e.getKey());
+                long val = e.getValue().count(groupBy, n, predicates);
+                if (addNode)
+                    n.count.addAndGet(val);
+                return val;
+            }).sum();
 
-    private JTreeCube(List<String> schema) {
-        this.schema = schema;
-    }
-
-    private void add(Object[] item) {
-        if (item.length != schema.size()) {
-            throw new IllegalArgumentException();
-        }
-        if (root.count.get() % 25000 == 0) {
-            System.out.println(String.format("%d items in tree", root.count.get()));
-        }
-        root.place(schema, item, 0);
-    }
-
-    public long size() {
-        return root.count.get();
-    }
-
-    public ResultNode count(String... groupBy) {
-        return root.count(Arrays.asList(groupBy));
-    }
-
-    public Stream<Pair<String, Long>> aggregate(String field, SortOrder sortOrder, List<Filter> filter) {
-        final ArrayList<Pair<String, Long>> list = new ArrayList<Pair<String, Long>>(100);
-        this.root.aggregate(field, filter, list);
-        return list.parallelStream().sorted(new Comparator<Pair<String, Long>>() {
-
-            @Override
-            public int compare(Pair<String, Long> o1, Pair<String, Long> o2) {
-                return (sortOrder == SortOrder.ASC) ? (int) (o1.value - o2.value) : (int) (o2.value - o1.value);
-            }
-
-        });
-    }
-
-    public static class ResultNode {
-
-        public final Object value;
-        public AtomicLong count;
-        public final Map<Object, ResultNode> children = Collections.synchronizedMap(new HashMap<>());
-        private final String key;
-
-        public ResultNode(String key, Object value, long count) {
-            this.key = key;
-            this.value = value;
-            this.count = new AtomicLong(count);
-        }
-
-        public ResultNode add(String key, Object value, long count) {
-            ResultNode child;
-            if (!this.children.containsKey(value)) {
-                child = new ResultNode(key, value, count);
-                this.children.put(value, child);
+            if (children.isEmpty()) {
+                return count.get();
             } else {
-                child = this.children.get(value);
-                child.count.addAndGet(count);
+                return sum;
             }
-            return child;
-        }
 
-        @Override
-        public int hashCode() {
-            int hash = 5;
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final ResultNode other = (ResultNode) obj;
-            if (!Objects.equals(this.value, other.value)) {
-                return false;
-            }
-            if (this.count.get() != other.count.get()) {
-                return false;
-            }
-            if (!this.children.equals(other.children)) {
-                return false;
-            }
-            return true;
         }
 
         @Override
         public String toString() {
-            return String.format("%s:%s:%d -> %s", key, value, count.get(), children.values().stream().map(c -> "\n" + c.toString()).collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString());
+            StringBuilder str = new StringBuilder();
+            toString(str, 0);            
+            return str.toString();
         }
-
-    }
-
-    public enum Operation {
-
-        EQ,
-        NEQ,
-        IN,
-        NIN,
-        GT,
-        GTE,
-        LT,
-        LTE;
-
-    }
-
-    public static class Pair<K, V> {
-
-        K key;
-        V value;
-    }
-
-    public static class Filter {
-
-        String key;
-        Object[] expected;
-        Operation operation;
-
-        public boolean applies(Object value) {
-
-            Matcher m = null;
-            switch (operation) {
-                case EQ:
-                    m = Matchers.equalTo(expected[0]);
-                    break;
-                case NEQ:
-                    m = Matchers.not(Matchers.equalTo(expected[0]));
-                    break;
-                case GT:
-                    m = Matchers.greaterThan((Double) expected[0]);
-                    break;
-                case GTE:
-                    m = Matchers.greaterThanOrEqualTo((Double) expected[0]);
-                    break;
-                case LT:
-                    m = Matchers.lessThan((Double) expected[0]);
-                    break;
-                case LTE:
-                    m = Matchers.lessThanOrEqualTo((Double) expected[0]);
-                    break;
-                case IN:
-                    m = Matchers.isIn(expected);
-                    break;
-                case NIN:
-                    m = Matchers.not(Matchers.isIn(expected));
-                    break;
+        
+        public void toString(StringBuilder str, int indent) {
+            for(int i = 0; i < indent; i++) {
+                str.append(" ");
             }
-            return m.matches(value);
+            str.append(String.format("%s:%d", key, count.get()));
+            if (!children.isEmpty()) {
+                children.entrySet().forEach(e -> {
+                    str.append("\n");
+                    for(int i = 0; i < indent+2; i++) {
+                        str.append(" ");
+                    }
+                    str.append(String.format("->'%s':%d\n", e.getKey().toString(), e.getValue().count.get()));
+                    e.getValue().toString(str, indent + 2);
+                });
+            }
+        }
+        
+    }
+
+    public static class JTreeCubeBuilder {
+
+        private final JTreeCube cube;
+
+        private JTreeCubeBuilder(List<String> schema) {
+            this.cube = new JTreeCube(schema);
         }
 
+        public JTreeCubeBuilder add(Object... values) {
+            cube.add(values);
+            return this;
+        }
+
+        public JTreeCube done() {
+            return cube;
+        }
+
+    }
+    
+    public static JTreeCubeBuilder build(List<String> schema) {
+        return new JTreeCubeBuilder(schema);
+    }
+
+    public static JTreeCube build(File file, List<String> schema) throws FileNotFoundException {
+        return null;
+    }
+
+    public static JTreeCube build(Result<Record> records, List<String> schema) {
+        JTreeCube cube = new JTreeCube(schema);
+        records.forEach(record -> {
+            cube.add(itemFromRecord(record, schema));
+        });
+        return cube;
+    }
+
+    private static Object[] itemFromRecord(Record record, List<String> schema) {
+        return schema.parallelStream().map(key -> {
+            return record.getValue(key);
+        }).toArray();
     }
 
 }
