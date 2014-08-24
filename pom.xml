@@ -56,9 +56,29 @@
             <version>1.3</version>
         </dependency>
     </dependencies>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <systemProperties>
+                        <property>                            
+                        </property>
+                    </systemProperties>
+                    <argLine>-Xmx16g -Xms8g -Xverify:none</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
 </project>

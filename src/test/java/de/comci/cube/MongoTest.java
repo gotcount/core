@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package de.comci.jtreecube;
+package de.comci.cube;
 
 /**
  *

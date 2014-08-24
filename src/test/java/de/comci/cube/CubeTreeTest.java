@@ -3,9 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package de.comci.jtreecube;
+package de.comci.cube;
 
-import de.comci.jtreecube.JTreeCube.Filter;
+import de.comci.cube.Dimension;
+import de.comci.cube.CubeTree;
+import de.comci.cube.CubeTree.Filter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -32,13 +34,13 @@ import org.junit.Test;
  *
  * @author Sebastian
  */
-public class JTreeCubeTest {
+public class CubeTreeTest {
 
     private static Connection conn;
-    private JTreeCube nullElementCube;
-    private JTreeCube cubeXL;
+    private CubeTree nullElementCube;
+    private CubeTree cubeXL;
 
-    public JTreeCubeTest() {
+    public CubeTreeTest() {
     }
 
     @Before
@@ -75,9 +77,9 @@ public class JTreeCubeTest {
         }
     }
 
-    private static JTreeCube getSimpleCube() {
+    private static CubeTree getSimpleCube() {
         
-        return JTreeCube.build(Arrays.asList("time", "client", "path"))
+        return CubeTree.build("time", "client", "path")
                 .add("2014-01-01 10:57:48", "127.0.0.1", "/")
                 .add("2014-01-01 10:58:48", "127.0.0.1", "/")
                 .add("2014-01-01 11:58:35", "146.140.3.24", "/test")
@@ -91,24 +93,24 @@ public class JTreeCubeTest {
     private static final Set<String> path = new HashSet<>();
     private static final int largeCubeSize = 1000 * 5;
     
-    private static JTreeCube getLargeCube() {
+    private static CubeTree getLargeCube() {
         
-        JTreeCube.JTreeCubeBuilder builder = JTreeCube.build(Arrays.asList("time", "client", "path"));
+        CubeTree.CubeTreeBuilder builder = CubeTree.build("time", "client", "path");
         
-        while(JTreeCubeTest.ip.size() < 50) {
-            JTreeCubeTest.ip.add(randomIp());
+        while(CubeTreeTest.ip.size() < 50) {
+            CubeTreeTest.ip.add(randomIp());
         }
-        while (JTreeCubeTest.path.size() < 50) {
-            JTreeCubeTest.path.add(randomPath());
+        while (CubeTreeTest.path.size() < 50) {
+            CubeTreeTest.path.add(randomPath());
         }
         
-        List<String> ip = new ArrayList<>(JTreeCubeTest.ip);
-        List<String> path = new ArrayList<>(JTreeCubeTest.path);
+        List<String> ip = new ArrayList<>(CubeTreeTest.ip);
+        List<String> path = new ArrayList<>(CubeTreeTest.path);
         
         for (int i = 0; i < largeCubeSize; i++) {
-            builder.add(JTreeCubeTest.randomDate(), 
-                    ip.get(JTreeCubeTest.r.nextInt(ip.size())), 
-                    path.get(JTreeCubeTest.r.nextInt(path.size())));
+            builder.add(CubeTreeTest.randomDate(), 
+                    ip.get(CubeTreeTest.r.nextInt(ip.size())), 
+                    path.get(CubeTreeTest.r.nextInt(path.size())));
         }
         
         return builder.done();
@@ -147,9 +149,9 @@ public class JTreeCubeTest {
     @Test
     public void nullElements() {
         
-        JTreeCube.JTreeCubeBuilder b = JTreeCube.build(
-                new JTreeCube.Dimension("d0", String.class), 
-                new JTreeCube.Dimension("d1", Integer.class));
+        CubeTree.CubeTreeBuilder b = CubeTree.build(
+                new Dimension("d0", String.class), 
+                new Dimension("d1", Integer.class));
         
         b.add("a string", null);
         b.add("another string", null);
@@ -158,13 +160,13 @@ public class JTreeCubeTest {
         b.add("a string", 54);
         b.add(null, 98);
         
-        JTreeCube nullElementsCube = b.done();
+        CubeTree nullElementsCube = b.done();
         
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode(null, null, 6);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 6);
         expected.add("d0", "a string", 3);
         expected.add("d0", "another string", 1);
         expected.add("d0", null, 2);
-        JTreeCube.ResultNode actual = nullElementsCube.count("d0");
+        CubeTree.ResultNode actual = nullElementsCube.count("d0");
         assertThat(actual).isEqualTo(expected);        
     }
     
@@ -175,7 +177,7 @@ public class JTreeCubeTest {
     
     @Test
     public void largeCubeClient() {
-        JTreeCube.ResultNode actual = cubeXL.count(largeCubeSize, "client");
+        CubeTree.ResultNode actual = cubeXL.count(largeCubeSize, "client");
         assertThat(actual.count.get()).isEqualTo(largeCubeSize);
     }
     
@@ -196,20 +198,20 @@ public class JTreeCubeTest {
 
     @Test
     public void countSimpleCubeNoFilter() {
-        assertThat(nullElementCube.count()).isEqualTo(new JTreeCube.ResultNode("", null, 6));
+        assertThat(nullElementCube.count()).isEqualTo(new CubeTree.ResultNode("", null, 6));
     }
     
     @Test
     public void countSimpleCubeByClientPath() {
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode("", null, 6);
-        JTreeCube.ResultNode c127 = expected.add("client", "127.0.0.1", 5);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 6);
+        CubeTree.ResultNode c127 = expected.add("client", "127.0.0.1", 5);
         c127.add("path", "/", 3);
         c127.add("path", "/123", 1);
         c127.add("path", "/test/code", 1);
-        JTreeCube.ResultNode c146 = expected.add("client", "146.140.3.24", 1);
+        CubeTree.ResultNode c146 = expected.add("client", "146.140.3.24", 1);
         c146.add("path", "/test", 1);
         
-        JTreeCube.ResultNode actual = nullElementCube.count("client", "path");
+        CubeTree.ResultNode actual = nullElementCube.count("client", "path");
         
         System.out.println("__cube");
         System.out.println(nullElementCube.toString());
@@ -224,7 +226,7 @@ public class JTreeCubeTest {
 
     @Test
     public void countSimpleCubeByClient() {
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode("", null, 6);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 6);
         expected.add("client", "127.0.0.1", 5);
         expected.add("client", "146.140.3.24", 1);
         
@@ -233,22 +235,22 @@ public class JTreeCubeTest {
     
     @Test
     public void countSimpleCubeByClientWithFilter() {
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode("", null, 2);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 2);
         expected.add("client", "127.0.0.1", 1);
         expected.add("client", "146.140.3.24", 1);
         
-        assertThat(nullElementCube.count(Arrays.asList(new JTreeCube.Filter("path", JTreeCube.Operation.IN, "/test", "/123")), "client")).isEqualTo(expected);
+        assertThat(nullElementCube.count(Arrays.asList(new CubeTree.Filter("path", CubeTree.Operation.IN, "/test", "/123")), "client")).isEqualTo(expected);
     }
     
     @Test
     public void countSimpleCubeByPath() {
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode("", null, 6);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 6);
         expected.add("path", "/", 3);
         expected.add("path", "/test", 1);
         expected.add("path", "/test/code", 1);
         expected.add("path", "/123", 1);
         
-        JTreeCube.ResultNode actual = nullElementCube.count("path");
+        CubeTree.ResultNode actual = nullElementCube.count("path");
         
         System.out.println("__cube");
         System.out.println(nullElementCube.toString());
@@ -274,14 +276,14 @@ public class JTreeCubeTest {
     
     @Test
     public void countSimpleCubeByPathWithClientFilter() {
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode("", null, 3);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 3);
         expected.add("client", "127.0.0.1", 3);
         expected.add("client", "146.140.3.24", 0);
         
         List<Filter> filter = new ArrayList<>();
-        filter.add(new Filter("path", JTreeCube.Operation.EQ, "/"));
+        filter.add(new Filter("path", CubeTree.Operation.EQ, "/"));
         
-        JTreeCube.ResultNode actual = nullElementCube.count(filter, "client");
+        CubeTree.ResultNode actual = nullElementCube.count(filter, "client");
         
         assertThat(actual).isEqualTo(expected);
     }
@@ -291,9 +293,9 @@ public class JTreeCubeTest {
 
         DSLContext create = DSL.using(conn, SQLDialect.MYSQL);
         Result<Record> result = create.select().from("accesslog").limit(100).fetch();
-        JTreeCube cube = JTreeCube.build(result, Arrays.asList("path", "timestamp", "hostname"));
+        CubeTree cube = CubeTree.build(result, Arrays.asList("path", "timestamp", "hostname"));
         
-        JTreeCube.ResultNode expected = new JTreeCube.ResultNode("", null, 100);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 100);
         expected.add("path", "comment/reply/72", 24);
         expected.add("path", "comment/reply/16", 17);
         expected.add("path", "comment/reply/2", 16);
