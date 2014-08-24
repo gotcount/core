@@ -7,7 +7,6 @@ package de.comci.cube;
 
 import de.comci.cube.Dimension;
 import de.comci.cube.CubeTree;
-import de.comci.cube.CubeTree.Filter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -198,12 +197,12 @@ public class CubeTreeTest {
 
     @Test
     public void countSimpleCubeNoFilter() {
-        assertThat(nullElementCube.count()).isEqualTo(new CubeTree.ResultNode("", null, 6));
+        assertThat(nullElementCube.count()).isEqualTo(new CubeTree.ResultNode(null, null, 6));
     }
     
     @Test
     public void countSimpleCubeByClientPath() {
-        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 6);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 6);
         CubeTree.ResultNode c127 = expected.add("client", "127.0.0.1", 5);
         c127.add("path", "/", 3);
         c127.add("path", "/123", 1);
@@ -226,7 +225,7 @@ public class CubeTreeTest {
 
     @Test
     public void countSimpleCubeByClient() {
-        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 6);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 6);
         expected.add("client", "127.0.0.1", 5);
         expected.add("client", "146.140.3.24", 1);
         
@@ -235,16 +234,16 @@ public class CubeTreeTest {
     
     @Test
     public void countSimpleCubeByClientWithFilter() {
-        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 2);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 2);
         expected.add("client", "127.0.0.1", 1);
         expected.add("client", "146.140.3.24", 1);
         
-        assertThat(nullElementCube.count(Arrays.asList(new CubeTree.Filter("path", CubeTree.Operation.IN, "/test", "/123")), "client")).isEqualTo(expected);
+        assertThat(nullElementCube.count(Arrays.asList(new Filter("path", CubeTree.Operation.IN, "/test", "/123")), "client")).isEqualTo(expected);
     }
     
     @Test
     public void countSimpleCubeByPath() {
-        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 6);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 6);
         expected.add("path", "/", 3);
         expected.add("path", "/test", 1);
         expected.add("path", "/test/code", 1);
@@ -276,7 +275,7 @@ public class CubeTreeTest {
     
     @Test
     public void countSimpleCubeByPathWithClientFilter() {
-        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 3);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 3);
         expected.add("client", "127.0.0.1", 3);
         expected.add("client", "146.140.3.24", 0);
         
@@ -295,7 +294,7 @@ public class CubeTreeTest {
         Result<Record> result = create.select().from("accesslog").limit(100).fetch();
         CubeTree cube = CubeTree.build(result, Arrays.asList("path", "timestamp", "hostname"));
         
-        CubeTree.ResultNode expected = new CubeTree.ResultNode("", null, 100);
+        CubeTree.ResultNode expected = new CubeTree.ResultNode(null, null, 100);
         expected.add("path", "comment/reply/72", 24);
         expected.add("path", "comment/reply/16", 17);
         expected.add("path", "comment/reply/2", 16);

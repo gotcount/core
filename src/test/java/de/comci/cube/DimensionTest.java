@@ -6,6 +6,7 @@
 
 package de.comci.cube;
 
+import java.util.Calendar;
 import java.util.Date;
 import static org.fest.assertions.api.Assertions.*;
 import org.junit.Test;
@@ -102,17 +103,12 @@ public class DimensionTest {
         
     }
     
-    @Test(expected = UnsupportedOperationException.class)
-    public void timeUnitOnNonDate() {
-        new Dimension("d", Integer.class).precision(TimeUnit.DAY);
-    }
-    
     @Test
     public void dateToYear() {
         
-        Dimension d = new Dimension("date", Date.class).precision(TimeUnit.YEAR);        
-        assertThat(d.map(new Date(104,0,1))).isEqualTo(new Time(new Date(104,0,1), TimeUnit.YEAR));
-        assertThat(d.map(new Date(100,0,1))).isEqualTo(new Time(new Date(100,0,1), TimeUnit.YEAR));
+        Dimension d = new Dimension("date", Date.class).precision(Calendar.YEAR);        
+        assertThat(d.map(new Date(104,0,1, 12,52,24))).isEqualTo(new Date(104,0,1));
+        assertThat(d.map(new Date(100,0,1, 1,24,48 ))).isEqualTo(new Date(100,0,1));
     }
     
     @Test

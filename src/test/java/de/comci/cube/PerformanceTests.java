@@ -6,10 +6,9 @@
 
 package de.comci.cube;
 
-import de.comci.cube.Dimension;
-import de.comci.cube.CubeTree;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -36,13 +35,13 @@ public class PerformanceTests {
         List<Dimension> dimensions = Arrays.asList(                
                 new Dimension("d5", Boolean.class),
                 new Dimension("d1", String.class),
-                new Dimension("d2", Double.class),
-                new Dimension("d3", Short.class),
-                new Dimension("d0", Date.class),
+                new Dimension("d2", Double.class).precision(100),
+                new Dimension("d3", Short.class).precision(10),
+                new Dimension("d0", Date.class).precision(Calendar.HOUR),
                 new Dimension("d4", Integer.class)                
         );
         CubeTree.CubeTreeBuilder builder = CubeTree.build(dimensions);
-        addData(builder, (int)(1000 * 1000 * 10), dimensions.stream().map(d -> d.clasz).collect(Collectors.toList()));
+        addData(builder, (int)(1000 * 1000 * 1), dimensions.stream().map(d -> d.clasz).collect(Collectors.toList()));
         cube = builder.done();
     }
     
@@ -90,7 +89,7 @@ public class PerformanceTests {
     public void countDateDimensionWithInFilterOnStringDownInTheTree() {
         List<Long> duration = new ArrayList<>(NUMBER_OF_TEST_RUNS);
         for (int i = 0; i < NUMBER_OF_TEST_RUNS; i++) {
-            cube.count(Arrays.asList(new CubeTree.Filter("d1", CubeTree.Operation.IN, "str5", "str100")), "d0");
+            cube.count(Arrays.asList(new Filter("d1", CubeTree.Operation.IN, "str5", "str100")), "d0");
             duration.add(cube.getLastQueryDuration());
         }
         final double avg = duration.stream().mapToLong(l -> l).average().getAsDouble();        
@@ -103,7 +102,7 @@ public class PerformanceTests {
     public void countDateDimensionWithGTEFilterOnIntegerDimensionDownInTheTree() {
         List<Long> duration = new ArrayList<>(NUMBER_OF_TEST_RUNS);
         for (int i = 0; i < NUMBER_OF_TEST_RUNS; i++) {
-            cube.count(Arrays.asList(new CubeTree.Filter("d4", CubeTree.Operation.GTE, 5)), "d0");
+            cube.count(Arrays.asList(new Filter("d4", CubeTree.Operation.GTE, 5)), "d0");
             duration.add(cube.getLastQueryDuration());
         }
         final double avg = duration.stream().mapToLong(l -> l).average().getAsDouble();        

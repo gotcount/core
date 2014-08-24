@@ -5,16 +5,20 @@
  */
 package de.comci.cube;
 
+import com.google.common.cache.Cache;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
@@ -58,8 +62,11 @@ public class CubeTree {
             if (value != null && !dim.clasz.isAssignableFrom(value.getClass())) {
                 throw new IllegalArgumentException(String.format("item[%d] '%s' not assignable to %s", i, value.getClass(), dim.clasz));
             }
+            // get value in set precision
+            Object precision = dim.map(value);
+            item[i] = precision;
             // store for histogram
-            dim.countValue(value);
+            dim.countValue(precision);
         }
 
         // info
@@ -123,10 +130,10 @@ public class CubeTree {
             }
 
             // put filter in map with dimension
-            Map<CubeDimension, Filter> filterMap = filter.stream().collect(Collectors.toMap(f -> getDimensionByName(f.key), f -> f));
+            Map<CubeDimension, Filter> filterMap = filter.stream().collect(Collectors.toMap(f -> getDimensionByName(f.getKey()), f -> f));
 
             // find max depth we need to visit
-            int maxDepth = filter.stream().mapToInt(f -> getDimensionByName(f.key).depth).max().orElse(0);
+            int maxDepth = filter.stream().mapToInt(f -> getDimensionByName(f.getKey()).depth).max().orElse(0);
             maxDepth = Math.max(maxDepth, Arrays.stream(groupBy).mapToInt(d -> getDimensionByName(d).depth).max().orElse(maxDepth));
 
             // aggregate element count
@@ -166,10 +173,10 @@ public class CubeTree {
     }
 
     private CubeTree done() {
-        
+
         // cleanup
         root.cleanup();
-        
+
         // update dimensions
         schema.forEach(d -> d.getHistogram());
 
@@ -180,15 +187,18 @@ public class CubeTree {
     private static class CubeDimension extends Dimension {
 
         final int depth;
-        private final Multiset<Object> values = HashMultiset.create();
+        private final Multiset<Object> values = HashMultiset.create();        
         private Map<Object, Integer> histogram;
 
         private CubeDimension(Dimension old, int depth) {
-            this(old.name, depth, old.clasz, 0);
+            this(old.name, depth, old.clasz);
+            this.precision = old.precision;
+            this.buckets = old.buckets;
+            this.bucketsLessThen = old.bucketsLessThen;
         }
 
-        private CubeDimension(String name, int depth, Class<?> clasz, double precision) {
-            super(name, clasz);
+        private CubeDimension(String name, int depth, Class<?> clasz) {
+            super(name, clasz);            
             this.depth = depth;
         }
 
@@ -220,7 +230,7 @@ public class CubeTree {
 
         public Object value;
         public AtomicLong count;
-        public final Map<Object, ResultNode> values;
+        private final Map<Object, ResultNode> values;
         private final Dimension dimension;
         private final String name;
 
@@ -230,15 +240,16 @@ public class CubeTree {
             //this.value = (dimension != null) ? dimension.getKey(index) : index;
             this.value = index;
             this.count = new AtomicLong(0);
-            this.values = new HashMap<>(1000);
+            this.values = new HashMap<>(10000);
         }
 
-        public ResultNode(String name, Object value, long count) {
+        // convienience method for testing only
+        ResultNode(String name, Object value, long count) {
             this.dimension = null;
             this.name = name;
             this.value = value;
             this.count = new AtomicLong(count);
-            this.values = new HashMap<>(1000);
+            this.values = new HashMap<>(10000);
         }
 
         private ResultNode(Dimension key, Object value, long count) {
@@ -246,7 +257,7 @@ public class CubeTree {
             this.name = key.name;
             this.value = value;
             this.count = new AtomicLong(count);
-            this.values = new HashMap<>(1000);
+            this.values = new HashMap<>(10000);
         }
 
         private synchronized ResultNode add(Dimension key, Object value, long count) {
@@ -266,13 +277,22 @@ public class CubeTree {
          * @param count
          * @return
          */
-        public synchronized ResultNode add(String key, Object value, long count) {
+        synchronized ResultNode add(String key, Object value, long count) {
             ResultNode child;
             if ((child = this.values.get(value)) == null) {
                 child = new ResultNode(key, value, count);
                 this.values.put(value, child);
             }
             return child;
+        }
+        
+        private synchronized ResultNode getNodeForValue(final Object key) {
+            ResultNode n;
+            if ((n = values.get(key)) == null) {
+                n = new ResultNode(dimension, key);
+                values.put(key, n);
+            }
+            return n;
         }
 
         @Override
@@ -347,62 +367,9 @@ public class CubeTree {
         GT,
         GTE,
         LT,
-        LTE;
-    }
-
-    public static class Filter {
-
-        private final Predicate<Object> predicate;
-        private final String key;
-        private final Operation operation;
-        private final List values;
-
-        public Filter(String key, Operation operation, Object... expected) {
-            this.key = key;
-            this.predicate = getMatcher(operation, expected);
-            this.operation = operation;
-            this.values = Arrays.asList(expected);
-        }
-
-        private Predicate getMatcher(Operation operation, Object... expected) {
-
-            double dval;
-            Object val = expected[0];
-            Set<Object> set;
-            switch (operation) {
-                case EQ:
-                    return (Predicate<Object>) (t) -> ((t != null) && t.equals(val) || t == val);
-                case NEQ:
-                    return (Predicate<Object>) (t) -> ((t != null) && !t.equals(val) || t != val);
-                case GT:
-                    dval = ((Number) expected[0]).doubleValue();
-                    return (Predicate<Number>) (t) -> t.doubleValue() > dval;
-                case GTE:
-                    dval = ((Number) expected[0]).doubleValue();
-                    return (Predicate<Number>) (t) -> t.doubleValue() >= dval;
-                case LT:
-                    dval = ((Number) expected[0]).doubleValue();
-                    return (Predicate<Number>) (t) -> t.doubleValue() < dval;
-                case LTE:
-                    dval = ((Number) expected[0]).doubleValue();
-                    return (Predicate<Number>) (t) -> t.doubleValue() <= dval;
-                case IN:
-                    set = new HashSet<>(Arrays.asList(expected));
-                    return (Predicate<Object>) (t) -> set.contains(t);
-                case NIN:
-                    set = new HashSet<>(Arrays.asList(expected));
-                    return (Predicate<Object>) (t) -> !set.contains(t);
-            }
-
-            throw new IllegalArgumentException();
-
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s is %s %s", key, operation, values);
-        }
-
+        LTE,
+        BETWEEN;
+        
     }
 
     private class Cube {
@@ -496,7 +463,10 @@ public class CubeTree {
         }
 
         @Override
-        long count(List<CubeDimension> groupBy, Map<CubeDimension, Filter> filters, ResultNode node, int maxDepth) {
+        long count(final List<CubeDimension> groupBy,
+                final Map<CubeDimension, Filter> filters,
+                final ResultNode node,
+                final int maxDepth) {
 
             if (dimension == null || depth > maxDepth || values.isEmpty()) {
                 return count;
@@ -507,24 +477,40 @@ public class CubeTree {
             Filter f = filters.get(dimension);
             if (f != null) {
                 // needs to be filtered
-                Object key = f.key;
-                switch (f.operation) {
+                Object key = f.getKey();                
+                switch (f.getOperation()) {
                     case EQ:
-                        Cube value = values.get(f.values.get(0));
+                        Cube value = values.get(f.getValues().get(0));
                         if (value == null) {
                             return 0;
                         }
                         return processNode(addNode, node, groupBy, filters, maxDepth, key, value);
                     case IN:
-                        return f.values.parallelStream().mapToLong(v -> {
+                        return f.getValues().parallelStream().mapToLong(v -> {
                             Cube val = values.get(v);
                             if (val == null) {
                                 return 0;
                             }
                             return processNode(addNode, node, groupBy, filters, maxDepth, key, val);
                         }).sum();
+                    case BETWEEN:
+                        
+                        if (!dimension.isComparable()) {
+                            throw new UnsupportedOperationException();
+                        }
+                        
+                        TreeMap<Object, Cube> tm = (TreeMap)values;                        
+                                                
+                        Entry<Object,Cube> lower = tm.ceilingEntry(f.getValues().get(0));
+                        Entry<Object,Cube> upper = tm.floorEntry(f.getValues().get(1));
+                        
+                        if (lower == null || upper == null) {
+                            return 0;
+                        }
+                        
+                        return upper.getValue().cumulativeCount - lower.getValue().cumulativeCount;                        
                     default:
-                        return values.entrySet().parallelStream().filter(e -> f.predicate.test(e.getKey())).mapToLong(e -> {
+                        return values.entrySet().parallelStream().filter(e -> f.getPredicate().test(e.getKey())).mapToLong(e -> {
                             return processNode(addNode, node, groupBy, filters, maxDepth, e.getKey(), e.getValue());
                         }).sum();
                 }
@@ -536,29 +522,23 @@ public class CubeTree {
 
         }
 
-        private long processNode(final boolean addNode, 
-                ResultNode node, 
-                List<CubeDimension> groupBy, 
-                Map<CubeDimension, Filter> filters, 
-                int maxDepth, 
-                Object key, 
-                Cube value) {
-            
+        private long processNode(final boolean addNode,
+                final ResultNode node,
+                final List<CubeDimension> groupBy,
+                final Map<CubeDimension, Filter> filters,
+                final int maxDepth,
+                final Object key,
+                final Cube value) {
+
             if (addNode) {
-                ResultNode n;
-                synchronized (node) {
-                    if ((n = node.values.get(key)) == null) {
-                        n = new ResultNode(dimension, key);
-                        node.values.put(key, n);
-                    }
-                }
+                final ResultNode n = node.getNodeForValue(key);
                 long val = value.count(groupBy, filters, n, maxDepth);
                 n.count.addAndGet(val);
                 return val;
             } else {
                 return value.count(groupBy, filters, node, maxDepth);
             }
-            
+
         }
 
         @Override
@@ -611,7 +591,7 @@ public class CubeTree {
 
         public CubeTree done() {
             long duration = System.currentTimeMillis() - started;
-            LOG.info(String.format(Locale.US, "done loading %,d items in %d:%02d:%02d", cube.root.count, 
+            LOG.info(String.format(Locale.US, "done loading %,d items in %d:%02d:%02d", cube.root.count,
                     TimeUnit.MILLISECONDS.toHours(duration),
                     TimeUnit.MILLISECONDS.toMinutes(duration),
                     TimeUnit.MILLISECONDS.toSeconds(duration)));
@@ -636,11 +616,11 @@ public class CubeTree {
         });
         return build(asList);
     }
-    
+
     public static CubeTreeBuilder build(List<Dimension> schema) {
         return new CubeTreeBuilder(schema);
     }
-    
+
     public static CubeTree build(Result<Record> records, List<String> schema) {
         CubeTree cube = new CubeTree(schema.stream().map(s -> new Dimension(s)).collect(Collectors.toList()));
         records.forEach(record -> {

@@ -23,7 +23,7 @@ public class Time implements Comparable<Time> {
         this.base = base;
         this.precision = precision;
     }
-
+    
     @Override
     public int compareTo(Time o) {
         int result = 0,

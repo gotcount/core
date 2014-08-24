@@ -23,7 +23,7 @@ public class ExtendedApacheLogRecord extends ApacheLogRecord {
         super(record.client, record.clientIdentity, record.remoteUser, record.date, record.method, record.request, record.protocol, record.statusCode, record.bytesSent, record.referer, record.userAgent);
     }
 
-    public ExtendedApacheLogRecord(String client, String clientIdentity, String remoteUser, Date date, String method, String request, String protocol, short statusCode, int bytesSent, String referer, String userAgent, String sessionId, SessionState sessionState) {
+    public ExtendedApacheLogRecord(String client, String clientIdentity, String remoteUser, Date date, String method, String request, String protocol, int statusCode, int bytesSent, String referer, String userAgent, String sessionId, SessionState sessionState) {
         super(client, clientIdentity, remoteUser, date, method, request, protocol, statusCode, bytesSent, referer, userAgent);
         this.sessionId = sessionId;
         this.sessionState = sessionState;

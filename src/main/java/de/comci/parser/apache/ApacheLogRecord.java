@@ -3,18 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package de.comci.parser.apache;
 
 import java.util.Date;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
  * @author Sebastian
  */
 public class ApacheLogRecord<R extends ApacheLogRecord> implements Comparable<R> {
-    
+
     public final String client;
     public final String clientIdentity;
     public final String remoteUser;
@@ -22,7 +23,7 @@ public class ApacheLogRecord<R extends ApacheLogRecord> implements Comparable<R>
     public final String method;
     public final String request;
     public final String protocol;
-    public final short statusCode;
+    public final int statusCode;
     public final int bytesSent;
     public final String referer;
     public final String userAgent;
@@ -34,11 +35,11 @@ public class ApacheLogRecord<R extends ApacheLogRecord> implements Comparable<R>
         return in;
     }
 
-    public ApacheLogRecord(String client, String clientIdentity, String remoteUser, Date date, String method, String request, String protocol, short statusCode, int bytesSent) {
+    public ApacheLogRecord(String client, String clientIdentity, String remoteUser, Date date, String method, String request, String protocol, int statusCode, int bytesSent) {
         this(client, clientIdentity, remoteUser, date, method, request, protocol, statusCode, bytesSent, null, null);
     }
 
-    public ApacheLogRecord(String client, String clientIdentity, String remoteUser, Date date, String method, String request, String protocol, short statusCode, int bytesSent, String referer, String userAgent) {
+    public ApacheLogRecord(String client, String clientIdentity, String remoteUser, Date date, String method, String request, String protocol, int statusCode, int bytesSent, String referer, String userAgent) {
         this.client = client;
         this.clientIdentity = ifEmpty(clientIdentity, null);
         this.remoteUser = ifEmpty(remoteUser, null);
@@ -50,6 +51,43 @@ public class ApacheLogRecord<R extends ApacheLogRecord> implements Comparable<R>
         this.bytesSent = bytesSent;
         this.referer = referer;
         this.userAgent = userAgent;
+    }
+
+    public String getRequestType() {
+        Matcher matcher = Pattern.compile("[^\\.]+\\.([^\\.\\?]+)(\\?.*)?$").matcher(request);
+        if (matcher.matches()) {
+            switch (matcher.group(1).toLowerCase()) {
+                case "gif":
+                case "jpeg":
+                case "jpg":
+                case "xbm":
+                case "eps":
+                case "bmp":
+                    return "image";
+                case "html":
+                case "htm":
+                    return "html";
+                case "css":
+                    return "style";
+                case "js":
+                    return "javascript";
+                case "mpg":
+                case "wav":
+                    return "video";
+                case "txt":
+                case "pdf":
+                case "doc":
+                    return "document";
+                case "zip":
+                    return "archive";
+                case "pl":
+                case "perl":
+                    return "script";
+                default:
+                    return "unknown";
+            }
+        }
+        return "html";
     }
 
     @Override

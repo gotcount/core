@@ -42,10 +42,10 @@ public class App {
             System.out.println(done.count("status", "method"));
             done.count("date", "bytes");
             
-            System.out.println(done.count(Arrays.asList(new CubeTree.Filter("method", CubeTree.Operation.EQ, "GET")), "status"));
-            System.out.println(done.count(Arrays.asList(new CubeTree.Filter("bytes", CubeTree.Operation.LTE, 10)), "status"));
-            System.out.println(done.count(Arrays.asList(new CubeTree.Filter("bytes", CubeTree.Operation.LTE, 10),
-                                                        new CubeTree.Filter("method", CubeTree.Operation.IN, "POST")), "status"));
+            System.out.println(done.count(Arrays.asList(new Filter("method", CubeTree.Operation.EQ, "GET")), "status"));
+            System.out.println(done.count(Arrays.asList(new Filter("bytes", CubeTree.Operation.LTE, 10)), "status"));
+            System.out.println(done.count(Arrays.asList(new Filter("bytes", CubeTree.Operation.LTE, 10),
+                                                        new Filter("method", CubeTree.Operation.IN, "POST")), "status"));
             
         } catch (FileNotFoundException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);

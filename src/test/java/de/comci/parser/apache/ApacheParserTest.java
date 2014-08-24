@@ -6,26 +6,14 @@
 
 package de.comci.parser.apache;
 
-import de.comci.parser.apache.ApacheParser;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Spliterator;
 import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import jdk.nashorn.internal.runtime.arrays.ArrayLikeIterator;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.fest.assertions.api.Assertions.*;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -38,7 +26,7 @@ public class ApacheParserTest {
     public ApacheParserTest() {
     }
    
-    private static class Testdatum {        
+    static class Testdatum {        
         String input;
         ApacheLogRecord output; 
 
@@ -49,8 +37,8 @@ public class ApacheParserTest {
         
     }
     
-    private static List<Testdatum> commonTests = new ArrayList<>();
-    private static List<Testdatum> combinedTests = new ArrayList<>();
+    static List<Testdatum> commonTests = new ArrayList<>();
+    static List<Testdatum> combinedTests = new ArrayList<>();
     
     static {        
         fillCommonTestCases(); 
