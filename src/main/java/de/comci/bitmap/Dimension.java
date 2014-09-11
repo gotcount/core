@@ -1,15 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package de.comci.bitmap;
 
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -19,20 +12,15 @@ import java.util.function.Predicate;
  */
 class Dimension<T> {
     
-    final String name;
+    private final String name;
     final Class<T> clasz;
     final int index;
     final Map<T, EWAHCompressedBitmap> bitmap = new HashMap<>();
-    private int size = 0;
 
     Dimension(String name, int index, Class<T> clasz) {
         this.name = name;
         this.index = index;
         this.clasz = clasz;
-    }
-    
-    void setSize(int size) {
-        this.size = size;
     }
     
     void set(int row, T value) {
@@ -52,6 +40,10 @@ class Dimension<T> {
         return histogram(b -> b.andCardinality(filter));
     }
 
+    public String getName() {
+        return name;
+    }
+    
     private Map<T, Integer> histogram(Function<EWAHCompressedBitmap, Integer> mapping) {
         Map<T, Integer> h = new HashMap<>(bitmap.size());
         bitmap.entrySet().stream().forEach((e) -> {

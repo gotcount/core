@@ -1,15 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package de.comci.bitmap;
 
-import com.google.common.collect.Multiset;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,14 +16,29 @@ import java.util.function.Predicate;
 public class BitMapColumns {
 
     private final Map<String, Dimension> dimensions = new HashMap<>();
-    private final List<Object[]> raw = new ArrayList<Object[]>(1000);
+    private final List<Object[]> raw = new ArrayList<>(1000);
     private boolean isReady;
 
+    /**
+     * Add a new dimension
+     * 
+     * @param name of the dimension, must be unique
+     * @param clasz of the dimensions values
+     * @return 
+     */
     public BitMapColumns dimension(String name, Class clasz) {
         dimensions.put(name, new Dimension(name, dimensions.size(), clasz));
         return this;
     }
 
+    /**
+     * Add a data row or tuple
+     * 
+     * @param data to be added, length must be equal to the number of dimensions
+     * @throws IllegalStateException if bitmaps have already been built
+     * @throws IllegalArgumentException if data.length does not equal the number of dimensions
+     * @throws IllegalArgumentException if the type of any object in data does not match the dimensions type
+     */
     public void add(final Object[] data) {
         if (isReady) {
             throw new IllegalStateException("already built");
@@ -47,13 +55,14 @@ public class BitMapColumns {
         raw.add(data);
     }
 
+    /**
+     * Generate the bit map data structures based upon the added data
+     */
     public void build() {
         long start = System.currentTimeMillis();
         int rows = raw.size();
-        dimensions.values().forEach(d -> d.setSize(rows));
         
         dimensions.values().parallelStream().forEach(d -> {
-            d.setSize(rows);
             for (int i = 0; i < rows; i++) {
                 Object[] row = raw.get(i);                
                 d.set(i, row[d.index]);
