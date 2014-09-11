@@ -64,8 +64,7 @@ public class BitMapColumns {
         
         dimensions.values().parallelStream().forEach(d -> {
             for (int i = 0; i < rows; i++) {
-                Object[] row = raw.get(i);                
-                d.set(i, row[d.index]);
+                d.set(i, raw.get(i)[d.index]);
             }
         });        
         
@@ -77,7 +76,16 @@ public class BitMapColumns {
         System.out.println(String.format(Locale.ENGLISH, "built maps for %,d rows in %,d ms", rows, buildOp));
     }
 
-    <T> int count(String dimension, T value) {
+    /**
+     * Get count for single dimensions value
+     * 
+     * @param <T> type of the dimensions value, must be constistent with {@link Dimension#clasz}
+     * @param dimension name of the dimension 
+     * @param value value whose count is requested
+     * @return the count of the value within the selected dimension or 0 if this value does not exists within the dimension
+     * @throws NoSuchElementException if no dimension with the given name exists
+     */
+    public <T> int count(String dimension, T value) {
         checkReadyState();
         if (!dimensions.containsKey(dimension)) {
             throw new NoSuchElementException();
@@ -85,8 +93,20 @@ public class BitMapColumns {
         return dimensions.get(dimension).count(value);
     }
 
-    <T> Map<T, Integer> histogram(String dimension) {
+    /**
+     * Get histogram for single dimension
+     * 
+     * @param <T> type of the dimensions values, must be constistent with {@link Dimension#clasz}
+     * @param dimension name of the dimension
+     * @return a Map<T, Integer> with the count for each value within dimension
+     * @throws NoSuchElementException if no dimension with the given name exists
+     */
+    public <T> Map<T, Integer> histogram(String dimension) {
         checkReadyState();
+        if (!dimensions.containsKey(dimension)) {
+            throw new NoSuchElementException();
+        }
+        
         long start = System.currentTimeMillis();
         final Map histogram = dimensions.get(dimension).histogram();
         long histogramOp = System.currentTimeMillis() - start;
@@ -96,8 +116,21 @@ public class BitMapColumns {
         return histogram;
     }
 
-    <T> Map<T, Integer> histogram(String dimension, Map<String, Predicate> filters) {
+    /**
+     * Get histogram for single dimension
+     * 
+     * @param <T> type of the dimensions values, must be constistent with {@link Dimension#clasz}
+     * @param dimension name of the dimension
+     * @param filters the Map of filters to be applied to the other dimensions
+     * @return a Map<T, Integer> with the count for each value within dimension where the given filters apply
+     * @throws NoSuchElementException if no dimension with the given name exists
+     * @throws IllegalArgumentException if the selected dimension is part of the filters
+     */
+    public <T> Map<T, Integer> histogram(String dimension, Map<String, Predicate> filters) {
         checkReadyState();
+        if (!dimensions.containsKey(dimension)) {
+            throw new NoSuchElementException();
+        }
         if (filters.containsKey(dimension)) {
             throw new IllegalArgumentException("cannot filter on histogram dimension");
         }
