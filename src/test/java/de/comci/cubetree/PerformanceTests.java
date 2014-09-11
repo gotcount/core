@@ -4,8 +4,11 @@
  * and open the template in the editor.
  */
 
-package de.comci.cube;
+package de.comci.cubetree;
 
+import de.comci.cubetree.Filter;
+import de.comci.cubetree.CubeTree;
+import de.comci.cubetree.Dimension;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;

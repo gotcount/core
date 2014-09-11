@@ -4,9 +4,9 @@
  * and open the template in the editor.
  */
 
-package de.comci.cube;
+package de.comci.cubetree;
 
-import de.comci.cube.TimeUnit;
+import de.comci.cubetree.TimeUnit;
 import java.util.Date;
 import static org.fest.assertions.api.Assertions.*;
 import org.junit.Test;

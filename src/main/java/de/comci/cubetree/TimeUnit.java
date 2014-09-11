@@ -1,4 +1,4 @@
-package de.comci.cube;
+package de.comci.cubetree;
 
 import java.util.Calendar;
 import java.util.Date;

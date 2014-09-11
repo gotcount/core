@@ -1,4 +1,4 @@
-package de.comci.cube;
+package de.comci.cubetree;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

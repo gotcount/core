@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package de.comci.cube;
+package de.comci.cubetree;
 
 import de.comci.parser.apache.ApacheLogRecord;
 import de.comci.parser.apache.ApacheParser;

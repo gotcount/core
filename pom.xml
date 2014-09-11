@@ -2,10 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.comci</groupId>
-    <artifactId>jtreecube</artifactId>
+    <artifactId>aggregator</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <dependencies>
+        <dependency>
+            <groupId>com.googlecode.javaewah</groupId>
+            <artifactId>JavaEWAH</artifactId>
+            <version>0.8.12</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-io</artifactId>
@@ -80,10 +85,10 @@
                         <property>                            
                         </property>
                     </systemProperties>
-                    <argLine>-Xmx16g -Xms8g -Xverify:none</argLine>
+                    <argLine>-Xmx20g -Xms8g -Xverify:none</argLine>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-    
+    <name>aggregator</name>
 </project>

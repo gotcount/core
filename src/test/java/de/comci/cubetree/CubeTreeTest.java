@@ -3,10 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package de.comci.cube;
+package de.comci.cubetree;
 
-import de.comci.cube.Dimension;
-import de.comci.cube.CubeTree;
+import de.comci.cubetree.Filter;
+import de.comci.cubetree.Dimension;
+import de.comci.cubetree.CubeTree;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;

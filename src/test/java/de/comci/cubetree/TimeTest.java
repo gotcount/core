@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package de.comci.cube;
+package de.comci.cubetree;
 
-import de.comci.cube.TimeUnit;
-import de.comci.cube.Time;
+import de.comci.cubetree.TimeUnit;
+import de.comci.cubetree.Time;
 import java.util.Date;
 import static org.fest.assertions.api.Assertions.*;
 import org.junit.Test;

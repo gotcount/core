@@ -3,8 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package de.comci.cube;
+package de.comci.cubetree;
 
+import de.comci.cubetree.Filter;
+import de.comci.cubetree.CubeTree;
+import de.comci.cubetree.Dimension;
 import de.comci.parser.apache.ApacheLogRecord;
 import de.comci.parser.apache.ApacheParser;
 import java.io.File;
@@ -24,7 +27,7 @@ import org.junit.Test;
  */
 public class RealLifeTest {
 
-    private static final int NUM_LINES = 2000000;
+    private static final int NUM_LINES = 100000;
     private static CubeTree cube;
 
     @BeforeClass
