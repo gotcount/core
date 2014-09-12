@@ -39,10 +39,10 @@ public class BitMapColumnsTest {
 
     @Before
     public void setUp() {
-        instance = new BitMapColumns();
-        instance.dimension("d0", String.class);
-        instance.dimension("d1", Integer.class);
-
+        instance = BitMapColumns.create()
+                    .dimension("d0", String.class)
+                    .dimension("d1", Integer.class)
+                    .get();
         instance.add(new Object[]{"123", 123});
         instance.add(new Object[]{null, 1});
         instance.add(new Object[]{"", 0});
@@ -62,9 +62,10 @@ public class BitMapColumnsTest {
      */
     @Test
     public void countSingleValueInDimension() {
-        BitMapColumns instance = new BitMapColumns();
-        instance.dimension("d0", String.class);
-        instance.dimension("d1", Integer.class);
+        instance = BitMapColumns.create()
+                    .dimension("d0", String.class)
+                    .dimension("d1", Integer.class)
+                    .get();
 
         instance.add(new Object[]{"123", 123});
         instance.add(new Object[]{null, 1});
@@ -74,7 +75,7 @@ public class BitMapColumnsTest {
         instance.add(new Object[]{"3", 123});
 
         instance.build();
-
+        
         assertThat(instance.count("d0", "123")).isEqualTo(2);
         assertThat(instance.count("d0", "3")).isEqualTo(1);
         assertThat(instance.count("d0", "")).isEqualTo(1);
@@ -86,7 +87,7 @@ public class BitMapColumnsTest {
     public void getHistogramForDimension() {
 
         instance.build();
-
+        
         Map<String, Integer> d0map = new HashMap<>();
         d0map.put("123", 2);
         d0map.put(null, 1);
@@ -193,15 +194,16 @@ public class BitMapColumnsTest {
     }
 
     @Test
-    public void addAfterBuilt() {
+    public void addAfterBuiltWithoutAdditionalBuild() {
 
         instance.build();
 
         try {
             instance.add(new Object[]{"123", 123});
+            instance.count("d0", "123");
             failBecauseExceptionWasNotThrown(IllegalStateException.class);
         } catch (IllegalStateException e) {
-            assertThat(e).hasMessage("already built");
+            assertThat(e).hasMessage("must build before querying");
         }
     }
 
@@ -231,16 +233,17 @@ public class BitMapColumnsTest {
     }
 
     private void sizeTestN(int size) {
-        instance = new BitMapColumns();
-        instance.dimension("d0", String.class);
-        instance.dimension("d1", String.class);
-        instance.dimension("d2", String.class);
-        instance.dimension("d3", Integer.class);
-        instance.dimension("d4", Long.class);
-        instance.dimension("d5", String.class);
-        instance.dimension("d6", String.class);
-        instance.dimension("d7", String.class);
-        instance.dimension("d8", String.class);
+        instance = BitMapColumns.create()
+                .dimension("d0", String.class)
+                .dimension("d1", String.class)
+                .dimension("d2", String.class)
+                .dimension("d3", Integer.class)
+                .dimension("d4", Long.class)
+                .dimension("d5", String.class)
+                .dimension("d6", String.class)
+                .dimension("d7", String.class)
+                .dimension("d8", String.class)
+                .get();
 
         TestDimension[] td = new TestDimension[]{
             TestDimension.withStrings(10),

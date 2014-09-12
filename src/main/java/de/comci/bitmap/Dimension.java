@@ -3,6 +3,7 @@ package de.comci.bitmap;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -66,5 +67,40 @@ class Dimension<T> {
         
         return EWAHCompressedBitmap.or(maps);
     }
-        
+
+    @Override
+    public String toString() {
+        return String.format("Dimension[%s/%s@%d]", name, clasz.getName(), index);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 83 * hash + Objects.hashCode(this.name);
+        hash = 83 * hash + Objects.hashCode(this.clasz);
+        hash = 83 * hash + this.index;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Dimension<?> other = (Dimension<?>) obj;
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.clasz, other.clasz)) {
+            return false;
+        }
+        if (this.index != other.index) {
+            return false;
+        }
+        return true;
+    }
+    
 }

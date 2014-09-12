@@ -1,8 +1,8 @@
 package de.comci.bitmap;
 
 import com.googlecode.javaewah.EWAHCompressedBitmap;
+import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -15,50 +15,71 @@ import java.util.function.Predicate;
  */
 public class BitMapColumns {
 
-    private final Map<String, Dimension> dimensions = new HashMap<>();
-    private final List<Object[]> raw = new ArrayList<>(1000);
+    public static BasicSchemaBuilder create() {
+        return new BasicSchemaBuilder();
+    }
+    
+    public static DbSchemaBuilder create(Connection conn, String table) {
+        return new DbSchemaBuilder(conn, table);
+    }
+    
+    private final Map<String, Dimension> dimensions;    
+    private final int columns;
+    private final List<Object[]> raw = new ArrayList<>(10000);
     private boolean isReady;
-
-    /**
-     * Add a new dimension
-     * 
-     * @param name of the dimension, must be unique
-     * @param clasz of the dimensions values
-     * @return 
-     */
-    public BitMapColumns dimension(String name, Class clasz) {
-        dimensions.put(name, new Dimension(name, dimensions.size(), clasz));
-        return this;
+    
+    BitMapColumns(Map<String, Dimension> dimensions) {
+        this.dimensions = dimensions;
+        this.columns = dimensions.size();
     }
 
-    /**
-     * Add a data row or tuple
+     /**
+     * Add a data tuple
      * 
-     * @param data to be added, length must be equal to the number of dimensions
-     * @throws IllegalStateException if bitmaps have already been built
+     * @param tuple to be added, length must be equal to the number of dimensions
      * @throws IllegalArgumentException if data.length does not equal the number of dimensions
      * @throws IllegalArgumentException if the type of any object in data does not match the dimensions type
      */
-    public void add(final Object[] data) {
-        if (isReady) {
-            throw new IllegalStateException("already built");
+    public BitMapColumns add(final Object[] data) {
+        
+        isReady = false;
+        
+        // check null
+        if (data == null) {
+            throw new IllegalArgumentException("null parameter not allowed");
         }
-        if (data.length != dimensions.size()) {
-            throw new IllegalArgumentException();
+        
+        // check length
+        if (data.length != columns) {
+            throw new IllegalArgumentException(String.format("column count does not match: expected %d, received %d", dimensions.size(), data.length));
         }
+        
+        // check types
         for (Dimension d : dimensions.values()) {
             if (data[d.index] != null
                     && !d.clasz.isAssignableFrom(data[d.index].getClass())) {
                 throw new IllegalArgumentException();
             }
         }
-        raw.add(data);
+        
+        this.raw.add(data);
+        
+        return this;
     }
-
+    
+    /**
+     * Synonym for {@link BitMapColumns#build() 
+     * 
+     * @return 
+     */
+    public BitMapColumns update() {
+        return build();
+    }
+    
     /**
      * Generate the bit map data structures based upon the added data
      */
-    public void build() {
+    public BitMapColumns build() {
         long start = System.currentTimeMillis();
         int rows = raw.size();
         
@@ -74,6 +95,7 @@ public class BitMapColumns {
         isReady = true;
         long buildOp = System.currentTimeMillis() - start;
         System.out.println(String.format(Locale.ENGLISH, "built maps for %,d rows in %,d ms", rows, buildOp));
+        return this;
     }
 
     /**
@@ -156,7 +178,7 @@ public class BitMapColumns {
     private void checkReadyState() throws IllegalStateException {
         if (!isReady) {
             throw new IllegalStateException("must build before querying");
-        }
+}
     }
 
 }
