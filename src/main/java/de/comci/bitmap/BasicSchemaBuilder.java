@@ -29,7 +29,7 @@ public class BasicSchemaBuilder extends SchemaBuilder {
     public BasicSchemaBuilder dimension(String name, Class clasz) {
         if (columns != null)
             throw new IllegalStateException("cannot alter dimensions when data has already been added");
-        dimensions.put(name, new Dimension(name, dimensions.size(), clasz));
+        dimensions.put(name, new BitMapDimension(name, dimensions.size(), clasz));
         return this;
     }
     

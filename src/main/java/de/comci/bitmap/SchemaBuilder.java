@@ -6,7 +6,9 @@
 
 package de.comci.bitmap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,16 +16,23 @@ import java.util.Map;
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
 class SchemaBuilder {
+    
     protected BitMapColumns columns;
-    protected final Map<String, Dimension> dimensions = new HashMap<>();
+    protected final Map<String, BitMapDimension> dimensions = new HashMap<>();
+    private final List<Object[]> data = new ArrayList<>(1000);
 
-    public BitMapColumns add(Object[] tuple) {
-        return get().add(tuple);
+    public SchemaBuilder add(Object[] tuple) {
+        if (columns != null)
+            throw new IllegalStateException("already build");
+        this.data.add(tuple);
+        return this;
     }
 
     public BitMapColumns get() {
         if (columns == null) {
             columns = new BitMapColumns(dimensions);
+            columns.add(data);
+            columns.build();
         }
         return columns;
     }

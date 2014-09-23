@@ -7,6 +7,8 @@ package de.comci.bitmap;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -40,9 +42,9 @@ public class BitMapColumnsTest {
     @Before
     public void setUp() {
         instance = BitMapColumns.create()
-                    .dimension("d0", String.class)
-                    .dimension("d1", Integer.class)
-                    .get();
+                .dimension("d0", String.class)
+                .dimension("d1", Integer.class)
+                .get();
         instance.add(new Object[]{"123", 123});
         instance.add(new Object[]{null, 1});
         instance.add(new Object[]{"", 0});
@@ -63,9 +65,9 @@ public class BitMapColumnsTest {
     @Test
     public void countSingleValueInDimension() {
         instance = BitMapColumns.create()
-                    .dimension("d0", String.class)
-                    .dimension("d1", Integer.class)
-                    .get();
+                .dimension("d0", String.class)
+                .dimension("d1", Integer.class)
+                .get();
 
         instance.add(new Object[]{"123", 123});
         instance.add(new Object[]{null, 1});
@@ -75,7 +77,7 @@ public class BitMapColumnsTest {
         instance.add(new Object[]{"3", 123});
 
         instance.build();
-        
+
         assertThat(instance.count("d0", "123")).isEqualTo(2);
         assertThat(instance.count("d0", "3")).isEqualTo(1);
         assertThat(instance.count("d0", "")).isEqualTo(1);
@@ -84,17 +86,67 @@ public class BitMapColumnsTest {
     }
 
     @Test
+    public void rowSize() {
+        instance.build();
+        assertThat(instance.size()).isEqualTo(8);
+    }
+
+    private static class SimpleTestDimension<T> implements Dimension<T> {
+
+        final String name;
+        final Class type;
+
+        public SimpleTestDimension(String name, Class<T> type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public Class<T> getType() {
+            return type;
+        }
+
+    }
+
+    @Test
+    public void dimensions() {
+        assertThat(instance.getDimensions()).usingElementComparator(new Comparator<Dimension>() {
+
+            @Override
+            public int compare(Dimension o1, Dimension o2) {
+
+                int c = o1.getName().compareTo(o2.getName());
+
+                if (c == 0) {
+                    c = (o1.getType().getName()).compareTo(o2.getType().getName());
+                }
+
+                return c;
+            }
+
+        }).containsOnly(
+                new SimpleTestDimension<>("d0", String.class),
+                new SimpleTestDimension<>("d1", Integer.class)
+        );
+    }
+
+    @Test
     public void getHistogramForDimension() {
 
         instance.build();
-        
+
         Map<String, Integer> d0map = new HashMap<>();
         d0map.put("123", 2);
         d0map.put(null, 1);
         d0map.put("", 1);
         d0map.put("-1", 1);
         d0map.put("3", 3);
-        
+
         assertThat(instance.<String>histogram("d0")).isEqualTo(d0map);
     }
 
@@ -102,7 +154,7 @@ public class BitMapColumnsTest {
     public void histogramWithFiltersEquals1() {
 
         instance.build();
-        
+
         Map<String, Integer> d0map = new HashMap<>();
         d0map.put("123", 0);
         d0map.put(null, 1);
@@ -127,7 +179,7 @@ public class BitMapColumnsTest {
         d0map.put("", 0);
         d0map.put("-1", 1);
         d0map.put("3", 1);
-        
+
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", v -> (int) v < 0);
 
@@ -211,25 +263,25 @@ public class BitMapColumnsTest {
     public void sizeTest1k() {
         sizeTestN(1000);
     }
-    
+
     @Test(timeout = 200)
     public void sizeTest10k() {
-        sizeTestN(1000*10);
+        sizeTestN(1000 * 10);
     }
-    
+
     @Test(timeout = 400)
     public void sizeTest100k() {
-        sizeTestN(1000*100);
+        sizeTestN(1000 * 100);
     }
-    
+
     @Test(timeout = 2000)
     public void sizeTest1m() {
-        sizeTestN(1000*1000);
+        sizeTestN(1000 * 1000);
     }
-   
+
     @Test(timeout = 15000)
     public void sizeTest10m() {
-        sizeTestN(1000*1000*10);
+        sizeTestN(1000 * 1000 * 10);
     }
 
     private void sizeTestN(int size) {
@@ -256,37 +308,37 @@ public class BitMapColumnsTest {
             TestDimension.withStrings(200),
             TestDimension.withStrings(1000)
         };
-        
-        for (int i = 0; i < size; i++) {            
+
+        for (int i = 0; i < size; i++) {
             Object[] data = new Object[td.length];
-            for (int d = 0; d < data.length; d++) {                
+            for (int d = 0; d < data.length; d++) {
                 data[d] = td[d].get();
             }
             instance.add(data);
         }
-        
+
         instance.build();
-        
+
         // all values in histogram
         Map<String, Predicate> filter = new HashMap<>();
-        filter.put("d3", v -> (int)v > (int)td[3].values[2]);        
+        filter.put("d3", v -> (int) v > (int) td[3].values[2]);
         assertThat(instance.histogram("d0", filter).keySet()).containsOnly(td[0].histogram.elementSet().toArray());
-        
+
         // test histogram values
         for (int i = 0; i < 7; i++) {
-            assertThat(instance.histogram("d" + i)).isEqualTo(td[i].getHistogram());            
+            assertThat(instance.histogram("d" + i)).isEqualTo(td[i].getHistogram());
         }
-        
+
         // multi filter
         filter = new HashMap<>();
-        filter.put("d3", v -> (int)v > (int)td[3].values[2]);
-        filter.put("d4", v -> (long)v > 100l && (long)v < 1000l);
+        filter.put("d3", v -> (int) v > (int) td[3].values[2]);
+        filter.put("d4", v -> (long) v > 100l && (long) v < 1000l);
         filter.put("d6", v -> v.equals(td[6].values[1]));
         assertThat(instance.histogram("d0", filter).keySet()).containsOnly(td[0].histogram.elementSet().toArray());
-        
+
     }
 
-    static class TestDimension<T> {
+    static class TestDimension<T> implements Dimension<T> {
 
         private final Multiset<T> histogram = HashMultiset.create();
         private T[] values;
@@ -295,11 +347,11 @@ public class BitMapColumnsTest {
         Map<T, Integer> getHistogram() {
             Map<T, Integer> map = new HashMap<>();
             for (T t : histogram.elementSet()) {
-                map.compute(t, (k,v) -> (int)histogram.count(k));
+                map.compute(t, (k, v) -> (int) histogram.count(k));
             }
             return map;
         }
-        
+
         static TestDimension withStrings(int uniqueValues) {
             TestDimension<String> t = new TestDimension<>();
             t.values = new String[uniqueValues];
@@ -332,6 +384,16 @@ public class BitMapColumnsTest {
             final T val = values[r.nextInt(values.length)];
             histogram.add(val);
             return val;
+        }
+
+        @Override
+        public String getName() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public Class<T> getType() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
     }

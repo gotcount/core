@@ -6,14 +6,16 @@
 package de.comci.bitmap;
 
 import java.sql.SQLException;
-import org.fest.assertions.api.Assertions;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import static org.fest.assertions.api.Assertions.*;
 import org.jooq.DSLContext;
 import org.jooq.Field;
-import org.jooq.Record;
 import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
-import org.jooq.impl.CustomField;
 import org.jooq.impl.DSL;
 import org.jooq.tools.jdbc.MockConnection;
 import org.jooq.tools.jdbc.MockDataProvider;
@@ -62,15 +64,35 @@ public class DbSchemaBuilderTest {
     }
 
     @Test
-    public void testDimensionsReadCorrectly() {
+    public void dimensionsReadCorrectly() {
 
-        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test");
+        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
 
-        Assertions.assertThat(instance.dimensions.values()).containsOnly(
-                new Dimension("name", 0, String.class),
-                new Dimension("gender", 1, String.class),
-                new Dimension("age", 2, Integer.class)
+        assertThat(instance.get().getDimensions()).containsOnly(
+                new BitMapDimension("name", 0, String.class),
+                new BitMapDimension("gender", 1, String.class),
+                new BitMapDimension("age", 2, Integer.class)
         );
+
+    }
+    
+    @Test
+    public void allRowsAdded() {
+        
+        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
+        assertThat(instance.get().size()).isEqualTo(4);
+        
+    }
+    
+    @Test
+    public void actuallyWorks() {
+        
+        Map<String, Integer> hist = new HashMap<>();
+        hist.put("a name", 3);
+        hist.put("b name", 1);
+        
+        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
+        assertThat(instance.get().<String>histogram("name")).isEqualTo(hist);
         
     }
 
@@ -85,19 +107,32 @@ public class DbSchemaBuilderTest {
             // You might need a DSLContext to create org.jooq.Result and org.jooq.Record objects
             DSLContext create = DSL.using(SQLDialect.MYSQL);
             MockResult[] mock = new MockResult[1];
-            
+
             Field<String> name = DSL.fieldByName(String.class, "name");
             Field<String> gender = DSL.fieldByName(String.class, "gender");
             Field<Integer> age = DSL.fieldByName(Integer.class, "age");
-            
+
             // Always return one author record
-            Result<Record3<String,String,Integer>> result = create.newResult(name, gender, age);            
-            result.add(create.newRecord(name, gender, age));
-            result.get(0).setValue(name, "a name");
-            result.get(0).setValue(gender, "m");
-            result.get(0).setValue(age, 10);
-            mock[0] = new MockResult(1, result);
+            Result<Record3<String, String, Integer>> result = create.newResult(name, gender, age);
+
+            List<List<Object>> data = Arrays.asList(
+                    Arrays.asList("a name", "m", 19),
+                    Arrays.asList("b name", "f", 26),
+                    Arrays.asList("a name", "f", 15),
+                    Arrays.asList("a name", "m", 31)
+            );
             
+            int i = 0;
+            for (List<Object> d : data) {
+                result.add(create.newRecord(name, gender, age));
+                result.get(i).setValue(name, (String)d.get(0));
+                result.get(i).setValue(gender, (String)d.get(1));
+                result.get(i).setValue(age, (int)d.get(2));
+                i++;
+            }
+          
+            mock[0] = new MockResult(1, result);
+
             return mock;
 
         }
