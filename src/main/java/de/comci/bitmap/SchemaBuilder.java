@@ -15,9 +15,9 @@ import java.util.Map;
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
-class SchemaBuilder {
+public class SchemaBuilder {
     
-    protected BitMapColumns columns;
+    protected BitMapCollection columns;
     protected final Map<String, BitMapDimension> dimensions = new HashMap<>();
     private final List<Object[]> data = new ArrayList<>(1000);
 
@@ -28,13 +28,17 @@ class SchemaBuilder {
         return this;
     }
 
-    public BitMapColumns get() {
+    public BitMapCollection get() {
         if (columns == null) {
-            columns = new BitMapColumns(dimensions);
+            columns = new BitMapCollection(dimensions);
             columns.add(data);
             columns.build();
         }
         return columns;
+    }
+    
+    int size() {
+        return data.size();
     }
     
 }

@@ -1,23 +1,30 @@
 package de.comci.bitmap;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multiset;
+import com.google.common.primitives.Ints;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
-public class BitMapColumns {
+public class BitMapCollection {
+
+    private final static Logger LOG = LoggerFactory.getLogger(BitMapCollection.class);
 
     public static BasicSchemaBuilder create() {
         return new BasicSchemaBuilder();
@@ -33,12 +40,12 @@ public class BitMapColumns {
     private boolean isReady;
     private int size = 0;
 
-    BitMapColumns(Map<String, BitMapDimension> dimensions) {
+    BitMapCollection(Map<String, BitMapDimension> dimensions) {
         this.dimensions = dimensions;
         this.columns = dimensions.size();
     }
-    
-    public BitMapColumns add(List<Object[]> data) {
+
+    public BitMapCollection add(List<Object[]> data) {
         data.forEach(d -> add(d));
         return this;
     }
@@ -46,14 +53,14 @@ public class BitMapColumns {
     /**
      * Add a data tuple
      *
-     * @param tuple to be added, length must be equal to the number of
-     * dimensions
+     * @param data
+     * @return
      * @throws IllegalArgumentException if data.length does not equal the number
      * of dimensions
      * @throws IllegalArgumentException if the type of any object in data does
      * not match the dimensions type
      */
-    public BitMapColumns add(final Object[] data) {
+    public BitMapCollection add(final Object[] data) {
 
         isReady = false;
 
@@ -85,14 +92,14 @@ public class BitMapColumns {
      *
      * @return
      */
-    BitMapColumns update() {
+    BitMapCollection update() {
         return build();
     }
 
     /**
      * Generate the bit map data structures based upon the added data
      */
-    BitMapColumns build() {
+    BitMapCollection build() {
         long start = System.currentTimeMillis();
         int rows = raw.size();
 
@@ -109,7 +116,9 @@ public class BitMapColumns {
         // set state
         isReady = true;
         long buildOp = System.currentTimeMillis() - start;
-        System.out.println(String.format(Locale.ENGLISH, "built maps for %,d rows in %,d ms", rows, buildOp));
+
+        LOG.info(String.format(Locale.ENGLISH, "built map for %,d rows in %,d ms", rows, buildOp));
+
         return this;
     }
 
@@ -141,17 +150,19 @@ public class BitMapColumns {
      * @return a Map<T, Integer> with the count for each value within dimension
      * @throws NoSuchElementException if no dimension with the given name exists
      */
-    public <T> Map<T, Integer> histogram(String dimension) {
-        checkReadyState();
-        if (!dimensions.containsKey(dimension)) {
-            throw new NoSuchElementException();
-        }
+    public Multiset<Value> histogram(String dimension) {
+        return histogram(dimension, 0);
+    }
 
+    public Multiset<Value> histogram(String dimension, int limit) {
+
+        checkReadyState(dimension);
+        
         long start = System.currentTimeMillis();
-        final Map histogram = dimensions.get(dimension).histogram();
+        final Multiset<Value> histogram = dimensions.get(dimension).histogram(limit);
         long histogramOp = System.currentTimeMillis() - start;
 
-        System.out.println(String.format(Locale.ENGLISH, "histogram created in %,d ms without filter", histogramOp));
+        LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms without filter", histogramOp));
 
         return histogram;
     }
@@ -169,11 +180,18 @@ public class BitMapColumns {
      * @throws IllegalArgumentException if the selected dimension is part of the
      * filters
      */
-    public <T> Map<T, Integer> histogram(String dimension, Map<String, Predicate> filters) {
-        checkReadyState();
-        if (!dimensions.containsKey(dimension)) {
-            throw new NoSuchElementException();
+    public Multiset<Value> histogram(String dimension, Map<String, Predicate> filters) {
+        return histogram(dimension, filters, 0);
+    }
+    
+    public Multiset<Value> histogram(String dimension, Map<String, Predicate> filters, int topN) {
+        
+        if (filters == null || filters.isEmpty()) {
+            return histogram(dimension, topN);            
         }
+        
+        checkReadyState(dimension);
+        
         if (filters.containsKey(dimension)) {
             throw new IllegalArgumentException("cannot filter on histogram dimension");
         }
@@ -188,10 +206,10 @@ public class BitMapColumns {
         long filterOp = System.currentTimeMillis() - start;
 
         start = System.currentTimeMillis();
-        final Map histogram = dimensions.get(dimension).histogram(filter);
+        final Multiset histogram = dimensions.get(dimension).histogram(filter, topN);
         long histogramOp = System.currentTimeMillis() - start;
 
-        System.out.println(String.format(Locale.ENGLISH, "histogram created in %,d ms with %,d ms for filtering", histogramOp, filterOp));
+        LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms with %,d ms for filtering", histogramOp, filterOp));
 
         return histogram;
     }
@@ -206,8 +224,67 @@ public class BitMapColumns {
         }
     }
 
+    private void checkReadyState(String dimension) throws IllegalStateException {
+        checkReadyState();
+        if (!dimensions.containsKey(dimension)) {
+            throw new NoSuchElementException();
+        }
+    }
+
     public Collection<Dimension> getDimensions() {
         return Collections.<Dimension>unmodifiableCollection(dimensions.values());
+    }
+
+    public Dimension getDimension(String name) {
+        if (!dimensions.containsKey(name)) {
+            throw new NoSuchElementException(String.format("no dimension with name '%s' exists", name));
+        }
+        return dimensions.get(name);
+    }
+
+    /**
+     * http://stackoverflow.com/questions/109383/how-to-sort-a-mapkey-value-on-the-values-in-java
+     *
+     * @param map
+     * @return
+     */
+    private static <T> Map<T, Integer> sortByValue(Map<T, Integer> map, SortDirection dir) {
+
+        List<Map.Entry<T, Integer>> list = new ArrayList<>(map.entrySet());
+        Collections.sort(list, (Map.Entry<T, Integer> o1, Map.Entry<T, Integer> o2) -> dir.order().compare(o1.getValue(), o2.getValue()));
+
+        final Map<T, Integer> result = new LinkedHashMap<>();
+        list.stream().forEach(e -> result.put(e.getKey(), e.getValue()));
+        return result;
+
+    }
+
+    /**
+     * http://stackoverflow.com/questions/4345633/simplest-way-to-iterate-through-a-multiset-in-the-order-of-element-frequency
+     */
+    private enum EntryComp implements Comparator<Multiset.Entry<?>> {
+
+        DESCENDING {
+                    @Override
+                    public int compare(final Multiset.Entry<?> a, final Multiset.Entry<?> b) {
+                        return Ints.compare(b.getCount(), a.getCount());
+                    }
+                },
+        ASCENDING {
+                    @Override
+                    public int compare(final Multiset.Entry<?> a, final Multiset.Entry<?> b) {
+                        return Ints.compare(a.getCount(), b.getCount());
+                    }
+                },
+    }
+
+    public static <E> List<Multiset.Entry<E>> getEntriesSortedByFrequency(
+            final Multiset<E> ms, final boolean ascending) {
+        final List<Multiset.Entry<E>> entryList = Lists.newArrayList(ms.entrySet());
+        Collections.sort(entryList, ascending
+                ? EntryComp.ASCENDING
+                : EntryComp.DESCENDING);
+        return entryList;
     }
 
 }

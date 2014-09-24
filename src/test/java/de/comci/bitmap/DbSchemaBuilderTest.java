@@ -5,6 +5,8 @@
  */
 package de.comci.bitmap;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -87,12 +89,12 @@ public class DbSchemaBuilderTest {
     @Test
     public void actuallyWorks() {
         
-        Map<String, Integer> hist = new HashMap<>();
-        hist.put("a name", 3);
-        hist.put("b name", 1);
+        Multiset<Value> hist = HashMultiset.create();
+        hist.add(Value.get("a name"), 3);
+        hist.add(Value.get("b name"), 1);
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
-        assertThat(instance.get().<String>histogram("name")).isEqualTo(hist);
+        assertThat(instance.get().histogram("name")).isEqualTo(hist);        
         
     }
 

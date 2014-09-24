@@ -6,20 +6,22 @@
 package de.comci.bitmap;
 
 import java.sql.Connection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.logging.Logger;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
-class DbSchemaBuilder extends SchemaBuilder {
+public class DbSchemaBuilder extends SchemaBuilder {
+    
+    private final static org.slf4j.Logger LOG = LoggerFactory.getLogger(DbSchemaBuilder.class);
 
     private final Connection connection;
     private final String table;
@@ -40,6 +42,9 @@ class DbSchemaBuilder extends SchemaBuilder {
     private void readTable() {
 
         DSLContext create = DSL.using(connection, dialect);
+        
+        LOG.trace(String.format("connection to db established '%s'", connection.toString()));
+        
         Cursor<Record> fetchLazy = create.resultQuery(String.format("SELECT * FROM `%s`;", table)).fetchLazy();
 
         // add dimensions
@@ -47,9 +52,13 @@ class DbSchemaBuilder extends SchemaBuilder {
         for (Field f : fetchLazy.fields()) {
             dimensions.put(f.getName(), new BitMapDimension(f.getName(), index++, f.getType()));
         }
+        
+        LOG.trace(String.format("%d dimensions read from table '%s'", dimensions.size(), table));
 
         // add data
         fetchLazy.forEach(r -> add(r.intoArray()));
+        
+        LOG.trace(String.format("%d rows read from table '%s'", size(), table));
 
     }
 
