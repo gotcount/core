@@ -30,8 +30,8 @@ public class BitMapCollection {
         return new BasicSchemaBuilder();
     }
 
-    public static DbSchemaBuilder create(Connection conn, String table) {
-        return new DbSchemaBuilder(conn, table);
+    public static DbSchemaBuilder create(Connection conn, String table, String... columns) {
+        return new DbSchemaBuilder(conn, table, columns);
     }
 
     private final Map<String, BitMapDimension> dimensions;

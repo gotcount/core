@@ -9,9 +9,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import static org.fest.assertions.api.Assertions.*;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -74,6 +72,18 @@ public class DbSchemaBuilderTest {
                 new BitMapDimension("name", 0, String.class),
                 new BitMapDimension("gender", 1, String.class),
                 new BitMapDimension("age", 2, Integer.class)
+        );
+
+    }
+    
+    @Test
+    public void someDimensionsReadCorrectly() {
+
+        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL, "name", "age");
+
+        assertThat(instance.get().getDimensions()).containsOnly(
+                new BitMapDimension("name", 0, String.class),
+                new BitMapDimension("age", 1, Integer.class)
         );
 
     }
