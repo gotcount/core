@@ -6,6 +6,7 @@
 package de.comci.bitmap;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -63,7 +64,7 @@ public class DbSchemaBuilder extends SchemaBuilder {
 
         Result<Record> fetch = create.selectFrom(DSL.tableByName(table)).limit(1).fetch();
 
-        Collection<Field<?>> fieldsToFetch = new HashSet<>();
+        List<Field<?>> fieldsToFetch = new ArrayList<>();
         
         // add dimensions
         int index = 0;
