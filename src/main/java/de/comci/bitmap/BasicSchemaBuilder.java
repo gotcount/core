@@ -6,9 +6,6 @@
 
 package de.comci.bitmap;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)

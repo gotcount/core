@@ -27,7 +27,7 @@ import org.junit.Test;
  */
 public class BitMapCollectionTest {
 
-    private BitMapCollection instance;
+    private GotCountDB instance;
 
     private final Comparator<Dimension> dimensionComparator = new Comparator<Dimension>() {
 
@@ -55,7 +55,7 @@ public class BitMapCollectionTest {
 
     @Before
     public void setUp() {
-        instance = BitMapCollection.create()
+        instance = GotCountDB.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
                 .get();
@@ -78,7 +78,7 @@ public class BitMapCollectionTest {
      */
     @Test
     public void countSingleValueInDimension() {
-        instance = BitMapCollection.create()
+        instance = GotCountDB.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
                 .get();
@@ -330,7 +330,7 @@ public class BitMapCollectionTest {
     }
 
     private void sizeTestN(int size) {
-        instance = BitMapCollection.create()
+        instance = GotCountDB.create()
                 .dimension("d0", String.class)
                 .dimension("d1", String.class)
                 .dimension("d2", String.class)

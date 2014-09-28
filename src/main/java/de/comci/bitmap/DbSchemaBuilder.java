@@ -8,8 +8,6 @@ package de.comci.bitmap;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jooq.Cursor;
@@ -18,7 +16,6 @@ import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
-import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 import org.slf4j.LoggerFactory;
 

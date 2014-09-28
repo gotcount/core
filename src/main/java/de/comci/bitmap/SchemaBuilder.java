@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class SchemaBuilder {
     
-    protected BitMapCollection columns;
+    protected GotCountDB columns;
     protected final Map<String, BitMapDimension> dimensions = new HashMap<>();
     private final List<Object[]> data = new ArrayList<>(1000);
 
@@ -28,9 +28,9 @@ public class SchemaBuilder {
         return this;
     }
 
-    public BitMapCollection get() {
+    public GotCountDB get() {
         if (columns == null) {
-            columns = new BitMapCollection(dimensions);
+            columns = new GotCountDB(dimensions);
             columns.add(data);
             columns.build();
         }

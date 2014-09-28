@@ -8,7 +8,6 @@ package de.comci.bitmap;
 import com.google.common.base.Functions;
 import com.google.common.collect.Ordering;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
