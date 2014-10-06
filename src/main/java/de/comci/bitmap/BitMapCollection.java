@@ -22,9 +22,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
-public class GotCountDB {
+public class BitMapCollection {
 
-    private final static Logger LOG = LoggerFactory.getLogger(GotCountDB.class);
+    private final static Logger LOG = LoggerFactory.getLogger(BitMapCollection.class);
 
     public static BasicSchemaBuilder create() {
         return new BasicSchemaBuilder();
@@ -40,12 +40,12 @@ public class GotCountDB {
     private boolean isReady;
     private int size = 0;
 
-    GotCountDB(Map<String, BitMapDimension> dimensions) {
+    BitMapCollection(Map<String, BitMapDimension> dimensions) {
         this.dimensions = dimensions;
         this.columns = dimensions.size();
     }
 
-    public GotCountDB add(List<Object[]> data) {
+    public BitMapCollection add(List<Object[]> data) {
         data.forEach(d -> add(d));
         return this;
     }
@@ -60,7 +60,7 @@ public class GotCountDB {
      * @throws IllegalArgumentException if the type of any object in data does
      * not match the dimensions type
      */
-    public GotCountDB add(final Object[] data) {
+    public BitMapCollection add(final Object[] data) {
 
         isReady = false;
 
@@ -92,14 +92,14 @@ public class GotCountDB {
      *
      * @return
      */
-    GotCountDB update() {
+    BitMapCollection update() {
         return build();
     }
 
     /**
      * Generate the bit map data structures based upon the added data
      */
-    GotCountDB build() {
+    BitMapCollection build() {
         long start = System.currentTimeMillis();
         int rows = raw.size();
 
