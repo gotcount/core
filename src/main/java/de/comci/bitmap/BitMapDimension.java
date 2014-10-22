@@ -61,10 +61,7 @@ public class BitMapDimension<T> implements Dimension {
         }
         if (!Objects.equals(this.clasz, other.clasz)) {
             return false;
-        }
-        if (this.index != other.index) {
-            return false;
-        }
+        }       
         return true;
     }
 

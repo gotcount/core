@@ -8,11 +8,16 @@ package de.comci.bitmap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import static org.fest.assertions.api.Assertions.*;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Record;
 import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
@@ -44,9 +49,9 @@ public class DbSchemaBuilderTest {
     public static void tearDownClass() {
     }
 
-    MockDataProvider provider;
+    MyProvider provider;
     MockConnection connection;
-    DSLContext create;
+    DSLContext context;
 
     @Before
     public void setUp() {
@@ -55,8 +60,7 @@ public class DbSchemaBuilderTest {
         connection = new MockConnection(provider);
 
         // Pass the mock connection to a jOOQ DSLContext:
-        create = DSL.using(connection, SQLDialect.MYSQL);
-
+        context = DSL.using(connection, SQLDialect.MYSQL);
     }
 
     @After
@@ -66,8 +70,13 @@ public class DbSchemaBuilderTest {
     @Test
     public void dimensionsReadCorrectly() {
 
+        provider.addField("name", String.class)
+                .addField("gender", String.class)
+                .addField("age", Integer.class)
+                .addRow("a name", "male", 25); 
+        
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
-
+        
         assertThat(instance.get().getDimensions()).containsOnly(
                 new BitMapDimension("name", 0, String.class),
                 new BitMapDimension("gender", 1, String.class),
@@ -79,17 +88,39 @@ public class DbSchemaBuilderTest {
     @Test
     public void someDimensionsReadCorrectly() {
 
-        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL, "name", "age");
+        provider.addField("name", String.class)
+                .addField("gender", String.class)
+                .addField("age", Integer.class)
+                .addField("email", String.class)
+                .addRow("a name", "male", 25, "1@2.3")
+                .addRow("another name", "female", 215, "1@2.3")
+                .addRow("a name", "male", 25, "1@2.3");
+        
+        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL, "name", "age", "gender");
 
         assertThat(instance.get().getDimensions()).containsOnly(
                 new BitMapDimension("name", 0, String.class),
-                new BitMapDimension("age", 1, Integer.class)
+                new BitMapDimension("age", 1, Integer.class),
+                new BitMapDimension("gender", 2, String.class)
         );
+        
+        assertThat(instance.get().size()).isEqualTo(3);
+        assertThat(instance.get().count("name", "a name")).isEqualTo(2);
+        assertThat(instance.get().count("age", 25)).isEqualTo(2);
 
     }
     
     @Test
     public void allRowsAdded() {
+        
+        provider.addField("name", String.class)
+                .addField("gender", String.class)
+                .addField("age", Integer.class)
+                .addField("email", String.class)
+                .addRow("a name", "male", 1, "1@2")
+                .addRow("a name", "female", 1, "1@3")
+                .addRow("a name", "unknown", 2, "1@5")
+                .addRow("another name", "male", 3, "1@8");
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
         assertThat(instance.get().size()).isEqualTo(4);
@@ -99,9 +130,19 @@ public class DbSchemaBuilderTest {
     @Test
     public void actuallyWorks() {
         
+        provider.addField("name", String.class)
+                .addField("gender", String.class)
+                .addField("age", Integer.class)
+                .addField("email", String.class)
+                .addRow("a name", "male", 1, "1@2")
+                .addRow("a name", "female", 1, "1@3")
+                .addRow("a name", "unknown", 2, "1@5")
+                .addRow("b name", "male", 3, "1@8")
+                .addRow("b name", "male", 3, "1@8");
+        
         Multiset<Value> hist = HashMultiset.create();
         hist.add(Value.get("a name"), 3);
-        hist.add(Value.get("b name"), 1);
+        hist.add(Value.get("b name"), 2);
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
         assertThat(instance.get().histogram("name")).isEqualTo(hist);        
@@ -113,36 +154,54 @@ public class DbSchemaBuilderTest {
      */
     private static class MyProvider implements MockDataProvider {
 
+        List<Field<?>> fields = new ArrayList<>();
+        List<Object[]> data = new ArrayList<>();
+        
+        public MyProvider() {            
+        }
+        
+        MyProvider addField(String name, Class type) {
+            fields.add(DSL.fieldByName(type, name));
+            return this;
+        }
+        
+        MyProvider addRow(Object... row) {
+            if (row.length != fields.size())
+                throw new IllegalArgumentException("row size does not match column count");
+            data.add(row);
+            return this;
+        }
+        
         @Override
         public MockResult[] execute(MockExecuteContext ctx) throws SQLException {
 
             // You might need a DSLContext to create org.jooq.Result and org.jooq.Record objects
-            DSLContext create = DSL.using(SQLDialect.MYSQL);
+            DSLContext context = DSL.using(SQLDialect.MYSQL);
             MockResult[] mock = new MockResult[1];
 
-            Field<String> name = DSL.fieldByName(String.class, "name");
-            Field<String> gender = DSL.fieldByName(String.class, "gender");
-            Field<Integer> age = DSL.fieldByName(Integer.class, "age");
-
-            // Always return one author record
-            Result<Record3<String, String, Integer>> result = create.newResult(name, gender, age);
-
-            List<List<Object>> data = Arrays.asList(
-                    Arrays.asList("a name", "m", 19),
-                    Arrays.asList("b name", "f", 26),
-                    Arrays.asList("a name", "f", 15),
-                    Arrays.asList("a name", "m", 31)
-            );
-            
-            int i = 0;
-            for (List<Object> d : data) {
-                result.add(create.newRecord(name, gender, age));
-                result.get(i).setValue(name, (String)d.get(0));
-                result.get(i).setValue(gender, (String)d.get(1));
-                result.get(i).setValue(age, (int)d.get(2));
-                i++;
+            if (!ctx.sql().startsWith("select * from")) {
+                Pattern p = Pattern.compile("select ([a-z]+)(, ([a-z]+))* from `test`.*");
+                Matcher matcher = p.matcher(ctx.sql());
+                if (matcher.matches()) {
+                    for (int i = 0; i < matcher.groupCount(); i++) {
+                        System.out.println(String.format("%d: %s", i, matcher.group(i)));
+                    }
+                }
             }
-          
+            
+            final Field[] fieldArray = fields.stream().toArray(size -> new Field[size]);
+
+            // Result object
+            Result result = context.newResult(fieldArray);
+
+            for (Object[] row : data) {
+                final Record newRecord = context.newRecord(fieldArray);
+                result.add(newRecord);
+                for (int j = 0; j < fields.size(); j++) {
+                    newRecord.<Object>setValue((Field<Object>)fields.get(j), (Object)row[j]);
+                }                
+            }
+                                  
             mock[0] = new MockResult(1, result);
 
             return mock;
