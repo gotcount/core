@@ -77,7 +77,7 @@ public class DbSchemaBuilderTest {
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
         
-        assertThat(instance.get().getDimensions()).containsOnly(
+        assertThat(instance.build().getDimensions()).containsOnly(
                 new BitMapDimension("name", 0, String.class),
                 new BitMapDimension("gender", 1, String.class),
                 new BitMapDimension("age", 2, Integer.class)
@@ -98,15 +98,15 @@ public class DbSchemaBuilderTest {
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL, "name", "age", "gender");
 
-        assertThat(instance.get().getDimensions()).containsOnly(
+        assertThat(instance.build().getDimensions()).containsOnly(
                 new BitMapDimension("name", 0, String.class),
                 new BitMapDimension("age", 1, Integer.class),
                 new BitMapDimension("gender", 2, String.class)
         );
         
-        assertThat(instance.get().size()).isEqualTo(3);
-        assertThat(instance.get().count("name", "a name")).isEqualTo(2);
-        assertThat(instance.get().count("age", 25)).isEqualTo(2);
+        assertThat(instance.build().size()).isEqualTo(3);
+        assertThat(instance.build().count("name", "a name")).isEqualTo(2);
+        assertThat(instance.build().count("age", 25)).isEqualTo(2);
 
     }
     
@@ -123,7 +123,7 @@ public class DbSchemaBuilderTest {
                 .addRow("another name", "male", 3, "1@8");
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
-        assertThat(instance.get().size()).isEqualTo(4);
+        assertThat(instance.build().size()).isEqualTo(4);
         
     }
     
@@ -145,7 +145,7 @@ public class DbSchemaBuilderTest {
         hist.add(Value.get("b name"), 2);
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
-        assertThat(instance.get().histogram("name")).isEqualTo(hist);        
+        assertThat(instance.build().histogram("name")).isEqualTo(hist);        
         
     }
 

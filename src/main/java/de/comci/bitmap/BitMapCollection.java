@@ -49,7 +49,7 @@ public class BitMapCollection {
         data.forEach(d -> add(d));
         return this;
     }
-
+    
     /**
      * Add a data tuple
      *
@@ -60,7 +60,7 @@ public class BitMapCollection {
      * @throws IllegalArgumentException if the type of any object in data does
      * not match the dimensions type
      */
-    public BitMapCollection add(final Object[] data) {
+    public BitMapCollection add(final Object... data) {
 
         isReady = false;
 
@@ -107,6 +107,17 @@ public class BitMapCollection {
             for (int i = 0; i < rows; i++) {
                 d.set(i, raw.get(i)[d.index]);
             }
+        });
+        
+        // sort dimension lists
+        dimensions.values().parallelStream().forEach(d -> {
+            // lambda not supported here ?!?
+            d.sortedMaps.sort(new Comparator<Map.Entry<Value, EWAHCompressedBitmap>>() {
+                @Override
+                public int compare(Map.Entry<Value, EWAHCompressedBitmap> o1, Map.Entry<Value, EWAHCompressedBitmap> o2) {
+                    return o2.getValue().cardinality() - o1.getValue().cardinality();
+                }                
+            });
         });
 
         this.size += rows;
@@ -198,11 +209,11 @@ public class BitMapCollection {
 
         long start = System.currentTimeMillis();
         EWAHCompressedBitmap filter = EWAHCompressedBitmap.and(
-                dimensions.entrySet().stream()
-                .filter(e -> filters.containsKey(e.getKey()))
-                .map(e -> e.getValue().filter(filters.get(e.getKey())))
-                .toArray(s -> new EWAHCompressedBitmap[s])
-        );
+                dimensions.entrySet().parallelStream()
+                    .filter(e -> filters.containsKey(e.getKey()))
+                    .map(e -> e.getValue().filter(filters.get(e.getKey())))
+                    .toArray(s -> new EWAHCompressedBitmap[s])
+            );
         long filterOp = System.currentTimeMillis() - start;
 
         start = System.currentTimeMillis();

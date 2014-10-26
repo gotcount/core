@@ -21,14 +21,14 @@ public class SchemaBuilder {
     protected final Map<String, BitMapDimension> dimensions = new HashMap<>();
     private final List<Object[]> data = new ArrayList<>(1000);
 
-    public SchemaBuilder add(Object[] tuple) {
+    public SchemaBuilder add(Object... tuple) {
         if (columns != null)
             throw new IllegalStateException("already build");
         this.data.add(tuple);
         return this;
     }
 
-    public BitMapCollection get() {
+    public BitMapCollection build() {
         if (columns == null) {
             columns = new BitMapCollection(dimensions);
             columns.add(data);

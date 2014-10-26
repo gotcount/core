@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import static org.fest.assertions.api.Assertions.*;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -58,7 +59,7 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
-                .get();
+                .build();
         instance.add(new Object[]{"123", 123});
         instance.add(new Object[]{null, 1});
         instance.add(new Object[]{"", 0});
@@ -81,7 +82,7 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
-                .get();
+                .build();
 
         instance.add(new Object[]{"123", 123});
         instance.add(new Object[]{null, 1});
@@ -303,18 +304,20 @@ public class BitMapCollectionTest {
             assertThat(e).hasMessage("must build before querying");
         }
     }
+    
+   
 
     @Test//(timeout = 200)
     public void sizeTest1k() {
         sizeTestN(1000);
     }
 
-    @Test(timeout = 200)
+    @Test(timeout = 300)
     public void sizeTest10k() {
         sizeTestN(1000 * 10);
     }
 
-    @Test(timeout = 400)
+    @Test(timeout = 600)
     public void sizeTest100k() {
         sizeTestN(1000 * 100);
     }
@@ -340,7 +343,7 @@ public class BitMapCollectionTest {
                 .dimension("d6", String.class)
                 .dimension("d7", String.class)
                 .dimension("d8", String.class)
-                .get();
+                .build();
 
         TestDimension[] td = new TestDimension[]{
             TestDimension.withStrings(10),
