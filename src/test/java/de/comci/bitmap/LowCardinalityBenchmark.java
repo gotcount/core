@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 import static org.fest.assertions.api.Assertions.assertThat;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -23,7 +23,7 @@ import org.junit.Test;
 public class LowCardinalityBenchmark extends AbstractBenchmark {
 
     static BitMapCollection instance;
-    static final int rows = 1000000;
+    static final int rows = 10 * 1000 * 1000;
 
     @BeforeClass
     public static void startup() {
@@ -41,8 +41,8 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
     }
     
     @Test
-    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 5)
-    public void withoutFilter() {
+    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 1)
+    public void withoutFilterTopRange() {
 
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
@@ -51,20 +51,41 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(histogram.elementSet().size()).isEqualTo(10);
         
     }
+    
+    @Test
+    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 1)
+    public void withoutFilterBottomRange() {
+
+        assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
+        assertThat(instance.size()).isEqualTo(rows);
+
+        final Multiset<Value> histogram = instance.histogram("d0", -10);
+        assertThat(histogram.elementSet().size()).isEqualTo(10);
+        
+    }
 
     @Test
-    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 5)
-    public void withFilter() {
+    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 1)
+    public void withFilterTopRange() {
+        withFilter(10);
+    }
+    
+    @Test
+    @Ignore
+    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 1)
+    public void withFilterBottomRange() {
+        withFilter(-5); // strange bug here
+    }
 
+    private void withFilter(int range) {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d0", p -> (int) p == 5);
 
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Multiset<Value> histogram = instance.histogram("d1", filter, 10);
-        assertThat(histogram.elementSet().size()).isEqualTo(10);
-
+        final Multiset<Value> histogram = instance.histogram("d1", filter, range);
+        assertThat(histogram.elementSet().size()).isEqualTo(Math.abs(range));
     }
 
 }

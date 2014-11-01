@@ -1,13 +1,11 @@
 package de.comci.bitmap;
 
 import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -15,7 +13,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  *
@@ -101,11 +98,11 @@ public class BitMapDimension<T> implements Dimension {
     }
 
     Multiset<Value<T>> histogram(EWAHCompressedBitmap filter) {
-        return histogram(b -> b.andCardinality(filter), 0);
+        return histogram(filter, 0);
     }
 
     Multiset<Value<T>> histogram(EWAHCompressedBitmap filter, int topN) {
-        return histogram(b -> b.andCardinality(filter), topN);
+        return histogramWithFilter(filter, topN);
     }
 
     EWAHCompressedBitmap filter(final Predicate<T> p) {
@@ -140,42 +137,28 @@ public class BitMapDimension<T> implements Dimension {
         }
 
         sublist.forEach((e) -> {
-            int count = e.getValue().cardinality();
-            boolean canAdd = true;
-            // remove value(s) to small (or large) to be part of the top (or bottom) n elements
-            if (limit != 0 && h.elementSet().size() == Math.abs(limit) && !h.elementSet().contains(e.getKey())) {
-                canAdd = false;
-                for (Iterator<Entry<Value<T>>> i = h.entrySet().iterator(); i.hasNext();) {
-                    if ((limit > 0 && i.next().getCount() < count)
-                            || (limit < 0 && i.next().getCount() > count)) {
-                        i.remove();
-                        canAdd = true;
-                        break;
-                    }
-                }
-            }
-            if (canAdd) {
-                h.add(e.getKey(), count);
-            }
+            h.add(e.getKey(), e.getValue().cardinality());
         });
+        
         return h;
     }
 
-    private Multiset<Value<T>> histogram(Function<EWAHCompressedBitmap, Integer> mapping, int limit) {
+    private Multiset<Value<T>> histogramWithFilter(EWAHCompressedBitmap filter, int limit) {
         Multiset<Value<T>> h = HashMultiset.create(sortedMaps.size());
 
         int border = (limit > 0) ? 0 : Integer.MAX_VALUE;
 
         for (Map.Entry<Value<T>, EWAHCompressedBitmap> e : sortedMaps) {
-            if (h.elementSet().size() == Math.abs(limit)
-                    && ((limit > 0 && e.getValue().cardinality() <= border)
-                    || (limit < 0 && e.getValue().cardinality() >= border))) {
+                      
+            if (limit > 0 
+                    && (h.elementSet().size() == Math.abs(limit))
+                    && (e.getValue().cardinality() <= border)) {
                 // we do not need to check the remaining values
                 // they cannot contribute anything of interest
                 break;
             }
 
-            int count = mapping.apply(e.getValue());
+            int count = filter.andCardinality(e.getValue());
             boolean canAdd = true;
             // remove value(s) to small (or large) to be part of the top (or bottom) n elements
             if (limit != 0 && h.elementSet().size() == Math.abs(limit) && !h.elementSet().contains(e.getKey())) {

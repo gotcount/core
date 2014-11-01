@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 import static org.fest.assertions.api.Assertions.assertThat;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -23,7 +22,7 @@ import org.junit.Test;
 public class HighCardinalityBenchmark extends AbstractBenchmark {
 
     static BitMapCollection instance;
-    static final int rows = 10000000;
+    static final int rows = 20 * 1000 * 1000;
 
     @BeforeClass
     public static void startup() {
@@ -41,7 +40,7 @@ public class HighCardinalityBenchmark extends AbstractBenchmark {
     }
     
     @Test
-    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 5)
+    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 1)
     public void withoutFilter() {
 
         assertThat(instance.count("d0", 1)).isEqualTo(1);
@@ -53,7 +52,7 @@ public class HighCardinalityBenchmark extends AbstractBenchmark {
     }
 
     @Test
-    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 5)
+    @BenchmarkOptions(benchmarkRounds = 10, warmupRounds = 1)
     public void withFilter() {
 
         Map<String, Predicate> filter = new HashMap<>();
