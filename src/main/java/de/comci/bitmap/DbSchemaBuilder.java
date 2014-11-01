@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
@@ -30,25 +31,38 @@ public class DbSchemaBuilder extends SchemaBuilder {
     private final Connection connection;
     private final String table;
     private final SQLDialect dialect;
-    private final List<String> inputColumns;
-    
-    DbSchemaBuilder(Connection conn, String table) {
+    private final List<Column> inputColumns;
+
+    public DbSchemaBuilder(Connection conn, String table) {
         this(conn, table, SQLDialect.MYSQL);
     }
+
+    public DbSchemaBuilder(Connection conn, String table, String... columns) {
+        this(conn, table, SQLDialect.MYSQL, columns);
+    }
     
-    DbSchemaBuilder(Connection conn, String table, String... columns) {
+    public DbSchemaBuilder(Connection conn, String table, Column... columns) {
         this(conn, table, SQLDialect.MYSQL, columns);
     }
 
-    DbSchemaBuilder(Connection conn, String table, SQLDialect dialect) {
+    public DbSchemaBuilder(Connection conn, String table, SQLDialect dialect) {
         this(conn, table, SQLDialect.MYSQL, "*");
     }
 
-    DbSchemaBuilder(Connection conn, String table, SQLDialect dialect, String... columns) {
+    public DbSchemaBuilder(Connection conn, String table, SQLDialect dialect, String... columns) {
         this.connection = conn;
         this.table = table;
         this.dialect = dialect;
-        this.inputColumns = Arrays.asList(columns).stream().map(s -> s.trim()).collect(Collectors.toList());
+        this.inputColumns = Arrays.asList(columns).stream().map(s -> new Column(s.trim(), null)).collect(Collectors.toList());
+
+        readTable();
+    }
+    
+    public DbSchemaBuilder(Connection conn, String table, SQLDialect dialect, Column... columns) {
+        this.connection = conn;
+        this.table = table;
+        this.dialect = dialect;
+        this.inputColumns = Arrays.asList(columns);
 
         readTable();
     }
@@ -62,24 +76,60 @@ public class DbSchemaBuilder extends SchemaBuilder {
         Result<Record> fetch = create.selectFrom(DSL.tableByName(table)).limit(1).fetch();
 
         List<Field<?>> fieldsToFetch = new ArrayList<>();
+
+        Map<String, Column> columnsMap = inputColumns.stream().collect(Collectors.toMap(Column::getName, c -> c));
         
         // add dimensions
         int index = 0;
         for (Field f : fetch.fields()) {
-            if (inputColumns.isEmpty() || inputColumns.get(0).equals("*") || inputColumns.contains(f.getName())) {
-                dimensions.put(f.getName(), new BitMapDimension(f.getName(), index++, f.getType()));
+            Column c = null;
+            if (inputColumns.isEmpty() || inputColumns.get(0).name.equals("*") || (c = columnsMap.get(f.getName())) != null) {
+                Class type = (c != null && c.type != null) ? c.type : f.getType();
+                dimensions.put(f.getName(), new BitMapDimension(f.getName(), index++, type));
                 fieldsToFetch.add(f);
             }
         }
-        
+
         LOG.trace(String.format("%d dimensions read from table '%s'", dimensions.size(), table));
-        
+
         // add data
         Cursor<Record> fetchLazy = create.select(fieldsToFetch).from(DSL.tableByName(table)).fetchLazy();
-        fetchLazy.forEach(r -> add(r.intoArray()));
+        fetchLazy.forEach(r -> {            
+            Object[] oa = new Object[fieldsToFetch.size()];
+            int i = 0;
+            for (Field f : fieldsToFetch) {
+                Column c = columnsMap.get(f.getName());
+                if (c != null && c.type != null) {
+                    oa[i++] = r.getValue((Field<?>)f, c.type);
+                } else {
+                    oa[i++] = r.getValue(f);
+                }
+            }
+            add(oa);
+        });
 
         LOG.trace(String.format("%d rows read from table '%s'", size(), table));
 
+    }
+
+    public static class Column {
+
+        final String name;
+        final Class type;
+
+        public Column(String name, Class type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Class getType() {
+            return type;
+        }
+        
     }
 
 }
