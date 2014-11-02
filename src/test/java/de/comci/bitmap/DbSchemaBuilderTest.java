@@ -9,8 +9,8 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,7 +18,6 @@ import static org.fest.assertions.api.Assertions.*;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
-import org.jooq.Record3;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -148,7 +147,82 @@ public class DbSchemaBuilderTest {
         assertThat(instance.build().histogram("name")).isEqualTo(hist);        
         
     }
+    
+    @Test
+    public void mapDatePrecisionNull() {
+        
+        DbSchemaBuilder.Column c = new DbSchemaBuilder.Column("test", String.class, null);
+        Date d = new Date(109,0,1);
+        assertThat(c.map(d)).isSameAs(d);
+    }
+    
+    @Test
+    public void mapDatePrecisionValid() {
+       
+        // valid values are: 1,2,5,11,12,13,14
+        
+        DbSchemaBuilder.Column c = new DbSchemaBuilder.Column("test", String.class, 1.0);
+        Date d = new Date(109,0,12);
+        assertThat(c.map(d)).isEqualTo(new Date(109,0,1));
+        
+        c = new DbSchemaBuilder.Column("test", String.class, 2.0);
+        d = new Date(109,4,12);
+        assertThat(c.map(d)).isEqualTo(new Date(109,4,1));
+        
+        c = new DbSchemaBuilder.Column("test", String.class, 5.0);
+        d = new Date(109,4,12,5,6);
+        assertThat(c.map(d)).isEqualTo(new Date(109,4,12,0,0));
+        
+        c = new DbSchemaBuilder.Column("test", String.class, 11.0);
+        d = new Date(109,4,12,5,6);
+        assertThat(c.map(d)).isEqualTo(new Date(109,4,12,5,0));
+        
+        c = new DbSchemaBuilder.Column("test", String.class, 13.0);
+        d = getDate(2009,4,12,5,6,54,123);
+        assertThat(c.map(d)).isEqualTo(getDate(2009, 4, 12, 5, 6, 54, 0));
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void illegalDatePrecision() {
+        DbSchemaBuilder.Column column = new DbSchemaBuilder.Column("12", Date.class, 0.0);
+    }
+    
+    @Test
+    public void readWithLimitedPrecision() {
 
+        provider.addField("date", java.sql.Date.class)
+                .addRow(getDate(2012, 1, 2, 16, 24, 28, 564))
+                .addRow(getDate(2012, 1, 4, 16, 21, 28, 564))
+                .addRow(getDate(2012, 1, 4, 12, 35, 51, 564)); 
+        
+        DbSchemaBuilder instance = new DbSchemaBuilder(
+                connection, 
+                "test", 
+                SQLDialect.MYSQL, 
+                new DbSchemaBuilder.Column("date", Date.class, 5.0)
+        );
+        
+        final BitMapCollection collection =  instance.build();
+        
+        assertThat(collection.getDimensions()).containsOnly(
+                new BitMapDimension("date", 0, Date.class)
+        );
+        
+        Multiset expected = HashMultiset.create();
+        expected.add(new Value(getDate(2012, 1, 4, 0, 0, 0, 0), Date.class), 2);
+        expected.add(new Value(getDate(2012, 1, 2, 0, 0, 0, 0), Date.class), 1);
+        
+        assertThat(collection.histogram("date")).isEqualTo(expected);
+
+    }
+    
+    private Date getDate(int year, int month, int day, int hour, int minute, int second, int ms) {
+        Calendar i = Calendar.getInstance();    
+        i.set(year, month, day, hour, minute, second);
+        i.set(Calendar.MILLISECOND, ms);
+        return i.getTime();
+    }
+    
     /**
      * http://www.jooq.org/doc/3.4/manual/tools/jdbc-mocking/
      */
