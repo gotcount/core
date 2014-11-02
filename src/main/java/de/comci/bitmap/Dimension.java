@@ -9,11 +9,14 @@ package de.comci.bitmap;
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
+ * @param <T>
  */
 public interface Dimension<T> {
 
     String getName();
     
     Class<T> getType();
+    
+    long getCardinality();
     
 }

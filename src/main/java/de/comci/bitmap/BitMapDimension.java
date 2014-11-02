@@ -184,4 +184,9 @@ public class BitMapDimension<T> implements Dimension {
         return h;
     }
 
+    @Override
+    public long getCardinality() {
+        return bitmap.size();
+    }
+
 }

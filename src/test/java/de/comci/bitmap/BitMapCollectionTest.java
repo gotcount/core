@@ -7,14 +7,12 @@ package de.comci.bitmap;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 import static org.fest.assertions.api.Assertions.*;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -124,6 +122,11 @@ public class BitMapCollectionTest {
         @Override
         public Class<T> getType() {
             return type;
+        }
+
+        @Override
+        public long getCardinality() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
     }
@@ -441,6 +444,11 @@ public class BitMapCollectionTest {
 
         @Override
         public Class<T> getType() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public long getCardinality() {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
