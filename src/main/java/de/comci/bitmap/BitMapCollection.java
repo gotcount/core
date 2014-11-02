@@ -78,7 +78,7 @@ public class BitMapCollection {
         for (BitMapDimension d : dimensions.values()) {
             if (data[d.index] != null
                     && !d.getType().isAssignableFrom(data[d.index].getClass())) {
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException(String.format("supplied data type '%s' does not match expected '%s' for dimension '%s'", data[d.index].getClass(), d.getType(), d.getName()));
             }
         }
 
