@@ -88,6 +88,17 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
     }
     
     @Test
+    public void toManyElementsWithSameCount() {
+        Histogram<String> t3 = new LimitedHashHistogram<>(3);
+        t3.set("a", 5);
+        t3.set("b", 5);
+        t3.set("c", 5);
+        t3.set("d", 5);
+        t3.set("e", 5);
+        assertThat(t3.keySet(false)).containsExactly("a", "b", "c");
+    }
+    
+    @Test
     public void equalsWithHashHistogram() {
         assertThat(h0).isEqualTo(h2);
     }

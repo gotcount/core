@@ -5,7 +5,6 @@
  */
 package de.comci.histogram;
 
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
@@ -33,10 +32,11 @@ public class LimitedHashHistogram<T> extends HashHistogram<T> {
             if ((limit > 0 && count > lastValue)
                     || (limit < 0 && count < lastValue)) {
                 remove(last);
+                super.set(t, count);
             }
+        } else {
+            super.set(t, count);
         }
-
-        super.set(t, count);
 
     }
     

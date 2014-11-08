@@ -163,7 +163,7 @@ public abstract class HistogramTest {
     }
 
     @Test
-    public void strangeBehaviour() {
+    public void sameCountForDifferentItemsCanActuallyHappen() {
 
         Multiset<Double> multiset = HashMultiset.create();
         multiset.add(16.0, 105);
@@ -175,14 +175,9 @@ public abstract class HistogramTest {
         multiset.add(9.0, 107);
 
         Histogram<Value<Double>> h = new HashHistogram();
-        System.out.println("__" + multiset.entrySet().toString());
-        System.out.println("__" + multiset.elementSet().toString());
         for (Double t : multiset.elementSet()) {
-            System.out.println("__" + t.toString());
             h.set(Value.get(t), multiset.count(t));
         }
-        System.out.println("__" + h.toString());
-        System.out.println("__" + h.keySet(true).toString());
 
         assertThat(h.keySet(true)).containsAll(multiset.elementSet().stream().map(d -> Value.get(d)).collect(Collectors.toSet()));
 
