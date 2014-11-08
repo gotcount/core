@@ -7,6 +7,8 @@ package de.comci.bitmap;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import de.comci.histogram.HashHistogram;
+import de.comci.histogram.Histogram;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -139,9 +141,9 @@ public class DbSchemaBuilderTest {
                 .addRow("b name", "male", 3, "1@8")
                 .addRow("b name", "male", 3, "1@8");
         
-        Multiset<Value> hist = HashMultiset.create();
-        hist.add(Value.get("a name"), 3);
-        hist.add(Value.get("b name"), 2);
+        Histogram<Value> hist = new HashHistogram<>();
+        hist.set(Value.get("a name"), 3);
+        hist.set(Value.get("b name"), 2);
         
         DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
         assertThat(instance.build().histogram("name")).isEqualTo(hist);        
@@ -208,9 +210,9 @@ public class DbSchemaBuilderTest {
                 new BitMapDimension("date", 0, Date.class)
         );
         
-        Multiset expected = HashMultiset.create();
-        expected.add(new Value(getDate(2012, 1, 4, 0, 0, 0, 0), Date.class), 2);
-        expected.add(new Value(getDate(2012, 1, 2, 0, 0, 0, 0), Date.class), 1);
+        Histogram<Value> expected = new HashHistogram<>();
+        expected.set(new Value(getDate(2012, 1, 4, 0, 0, 0, 0), Date.class), 2);
+        expected.set(new Value(getDate(2012, 1, 2, 0, 0, 0, 0), Date.class), 1);
         
         assertThat(collection.histogram("date")).isEqualTo(expected);
 

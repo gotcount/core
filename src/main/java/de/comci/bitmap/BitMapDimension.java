@@ -4,6 +4,8 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
+import de.comci.histogram.Histogram;
+import de.comci.histogram.LimitedHashHistogram;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,19 +90,19 @@ public class BitMapDimension<T> implements Dimension {
         return (bs != null) ? bs.cardinality() : 0;
     }
 
-    Multiset<Value<T>> histogram() {
+    Histogram<Value<T>> histogram() {
         return histogramWithoutFilter(0);
     }
 
-    Multiset<Value<T>> histogram(int topN) {
+    Histogram<Value<T>> histogram(int topN) {
         return histogramWithoutFilter(topN);
     }
 
-    Multiset<Value<T>> histogram(EWAHCompressedBitmap filter) {
+    Histogram<Value<T>> histogram(EWAHCompressedBitmap filter) {
         return histogram(filter, 0);
     }
 
-    Multiset<Value<T>> histogram(EWAHCompressedBitmap filter, int topN) {
+    Histogram<Value<T>> histogram(EWAHCompressedBitmap filter, int topN) {
         return histogramWithFilter(filter, topN);
     }
 
@@ -121,8 +123,9 @@ public class BitMapDimension<T> implements Dimension {
         return EWAHCompressedBitmap.or(maps);
     }
 
-    private Multiset<Value<T>> histogramWithoutFilter(int limit) {
-        Multiset<Value<T>> h = HashMultiset.create(sortedMaps.size());
+    private Histogram<Value<T>> histogramWithoutFilter(int limit) {
+
+        Histogram<Value<T>> histogram = new LimitedHashHistogram<>(limit);
 
         List<Map.Entry<Value<T>, EWAHCompressedBitmap>> sublist;
         if (limit > 0) {
@@ -136,57 +139,47 @@ public class BitMapDimension<T> implements Dimension {
         }
 
         sublist.forEach((e) -> {
-            h.add(e.getKey(), e.getValue().cardinality());
+            histogram.set(e.getKey(), e.getValue().cardinality());
         });
-        
-        return h;
+
+        return histogram;
     }
 
-    private Multiset<Value<T>> histogramWithFilter(EWAHCompressedBitmap filter, int limit) {
-        Multiset<Value<T>> h = HashMultiset.create(sortedMaps.size());
+    private Histogram<Value<T>> histogramWithFilter(EWAHCompressedBitmap filter, int limit) {
 
-        int border = (limit > 0) ? 0 : Integer.MAX_VALUE;
+        Histogram<Value<T>> histogram = new LimitedHashHistogram<>(limit);
+
+        int currentLimit = 0;
 
         for (Map.Entry<Value<T>, EWAHCompressedBitmap> e : sortedMaps) {
-                      
-            if (limit > 0 
-                    && (h.elementSet().size() == Math.abs(limit))
-                    && (e.getValue().cardinality() <= border)) {
+
+            if (limit > 0
+                    && (histogram.size() == Math.abs(limit))
+                    && (e.getValue().cardinality() <= currentLimit)) {
                 // we do not need to check the remaining values
                 // they cannot contribute anything of interest
                 break;
             }
 
-            int count = filter.andCardinality(e.getValue());
-            boolean canAdd = true;
-            // remove value(s) to small (or large) to be part of the top (or bottom) n elements
-            if (limit != 0 && h.elementSet().size() == Math.abs(limit) && !h.elementSet().contains(e.getKey())) {
-                canAdd = false;
-                for (Iterator<Entry<Value<T>>> i = h.entrySet().iterator(); i.hasNext();) {
-                    if ((limit > 0 && i.next().getCount() < count)
-                            || (limit < 0 && i.next().getCount() > count)) {
-                        i.remove();
-                        canAdd = true;
-                        break;
-                    }
-                }
-            }
-            if (canAdd) {
-                h.add(e.getKey(), count);
-                if (limit > 0) {
-                    border = Math.max(border, count);
-                } else if (limit < 0) {
-                    border = Math.min(border, count);
-                }
+            int currentValueCount = filter.andCardinality(e.getValue());
+
+            histogram.set(e.getKey(), currentValueCount);
+            if (limit > 0) {
+                currentLimit = Math.max(currentLimit, currentValueCount);
             }
         }
 
-        return h;
+        return histogram;
     }
 
     @Override
     public long getCardinality() {
         return bitmap.size();
+    }
+
+    void build() {
+        // sort values by cardinality
+        sortedMaps.sort((a, b) -> b.getValue().cardinality() - a.getValue().cardinality());
     }
 
 }

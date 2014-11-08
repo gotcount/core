@@ -8,6 +8,7 @@ package de.comci.bitmap;
 import com.carrotsearch.junitbenchmarks.AbstractBenchmark;
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 import com.google.common.collect.Multiset;
+import de.comci.histogram.Histogram;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -47,8 +48,8 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Multiset<Value> histogram = instance.histogram("d0", 10);
-        assertThat(histogram.elementSet().size()).isEqualTo(10);
+        final Histogram<Value> histogram = instance.histogram("d0", 10);
+        assertThat(histogram.size()).isEqualTo(10);
         
     }
     
@@ -59,8 +60,8 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Multiset<Value> histogram = instance.histogram("d0", -10);
-        assertThat(histogram.elementSet().size()).isEqualTo(10);
+        final Histogram<Value> histogram = instance.histogram("d0", -10);
+        assertThat(histogram.size()).isEqualTo(10);
         
     }
 
@@ -84,8 +85,8 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Multiset<Value> histogram = instance.histogram("d1", filter, range);
-        assertThat(histogram.elementSet().size()).isEqualTo(Math.abs(range));
+        final Histogram<Value> histogram = instance.histogram("d1", filter, range);
+        assertThat(histogram.size()).isEqualTo(Math.abs(range));
     }
 
 }

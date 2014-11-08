@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.primitives.Ints;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
+import de.comci.histogram.Histogram;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -111,14 +112,8 @@ public class BitMapCollection {
         
         // sort dimension lists
         dimensions.values().parallelStream().forEach(d -> {
-            // lambda not supported here ?!?
-            d.sortedMaps.sort(new Comparator<Map.Entry<Value, EWAHCompressedBitmap>>() {
-                @Override
-                public int compare(Map.Entry<Value, EWAHCompressedBitmap> o1, Map.Entry<Value, EWAHCompressedBitmap> o2) {
-                    return o2.getValue().cardinality() - o1.getValue().cardinality();
-                }                
-            });
-        });
+            d.build();
+        });        
 
         this.size += rows;
 
@@ -161,16 +156,16 @@ public class BitMapCollection {
      * @return a Map<T, Integer> with the count for each value within dimension
      * @throws NoSuchElementException if no dimension with the given name exists
      */
-    public Multiset<Value> histogram(String dimension) {
+    public Histogram<Value> histogram(String dimension) {
         return histogram(dimension, 0);
     }
 
-    public Multiset<Value> histogram(String dimension, int limit) {
+    public Histogram<Value> histogram(String dimension, int limit) {
 
         checkReadyState(dimension);
         
         long start = System.currentTimeMillis();
-        final Multiset<Value> histogram = dimensions.get(dimension).histogram(limit);
+        final Histogram<Value> histogram = dimensions.get(dimension).histogram(limit);
         long histogramOp = System.currentTimeMillis() - start;
 
         LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms without filter", histogramOp));
@@ -191,11 +186,11 @@ public class BitMapCollection {
      * @throws IllegalArgumentException if the selected dimension is part of the
      * filters
      */
-    public Multiset<Value> histogram(String dimension, Map<String, Predicate> filters) {
+    public Histogram<Value> histogram(String dimension, Map<String, Predicate> filters) {
         return histogram(dimension, filters, 0);
     }
     
-    public Multiset<Value> histogram(String dimension, Map<String, Predicate> filters, int topN) {
+    public Histogram<Value> histogram(String dimension, Map<String, Predicate> filters, int topN) {
         
         if (filters == null || filters.isEmpty()) {
             return histogram(dimension, topN);            
@@ -217,7 +212,7 @@ public class BitMapCollection {
         long filterOp = System.currentTimeMillis() - start;
 
         start = System.currentTimeMillis();
-        final Multiset histogram = dimensions.get(dimension).histogram(filter, topN);
+        final Histogram histogram = dimensions.get(dimension).histogram(filter, topN);
         long histogramOp = System.currentTimeMillis() - start;
 
         LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms with %,d ms for filtering", histogramOp, filterOp));
