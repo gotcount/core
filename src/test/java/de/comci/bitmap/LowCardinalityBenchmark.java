@@ -7,7 +7,6 @@ package de.comci.bitmap;
 
 import com.carrotsearch.junitbenchmarks.AbstractBenchmark;
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
-import com.google.common.collect.Multiset;
 import de.comci.histogram.Histogram;
 import java.util.HashMap;
 import java.util.Map;
