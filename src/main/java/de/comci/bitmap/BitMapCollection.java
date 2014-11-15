@@ -84,7 +84,7 @@ public class BitMapCollection {
         }
 
         this.raw.add(data);
-
+      
         return this;
     }
 
@@ -103,11 +103,14 @@ public class BitMapCollection {
     BitMapCollection build() {
         long start = System.currentTimeMillis();
         int rows = raw.size();
+        
+        LOG.info(String.format(Locale.ENGLISH, "building map for %,d row", rows));
 
         dimensions.values().parallelStream().forEach(d -> {
             for (int i = 0; i < rows; i++) {
-                d.set(i, raw.get(i)[d.index]);
+                d.set(i, raw.get(i)[d.index]);                
             }
+            LOG.info(String.format("dimension '%s' built", d.getName()));
         });
         
         // sort dimension lists

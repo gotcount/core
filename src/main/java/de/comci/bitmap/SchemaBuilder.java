@@ -10,12 +10,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
 public class SchemaBuilder {
+    
+    private final static Logger LOG = LoggerFactory.getLogger(SchemaBuilder.class);
     
     protected BitMapCollection columns;
     protected final Map<String, BitMapDimension> dimensions = new HashMap<>();
@@ -25,6 +29,9 @@ public class SchemaBuilder {
         if (columns != null)
             throw new IllegalStateException("already build");
         this.data.add(tuple);
+        if (this.data.size() % 100000 == 0 && !this.data.isEmpty()) {
+            LOG.info(String.format("added %dk rows", this.data.size() / 1000));
+        }
         return this;
     }
 
