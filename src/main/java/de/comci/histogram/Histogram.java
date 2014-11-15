@@ -5,16 +5,17 @@
  */
 package de.comci.histogram;
 
-import java.util.Map;
+import java.util.Collection;
 import java.util.NoSuchElementException;
-import java.util.TreeSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  * @param <T>
  */
-public interface Histogram<T> {
+public interface Histogram<T> extends Iterable<Histogram.Entry<T, Integer>> {
 
     /**
      * Returns the count for the given key
@@ -26,18 +27,26 @@ public interface Histogram<T> {
      */
     Integer get(T key);
 
-    TreeSet<T> keySet(boolean ascending);
-    
-    TreeSet<Map.Entry<T, Integer>> entrySet(boolean ascending);
-
     void set(T key, int counkey);
 
     int size();
 
-    void remove(T key);
+    Integer remove(T key);
 
     boolean has(T key);
     
     void clear();
+    
+    Set<T> keySet();
+    
+    interface Entry<T, Integer> {
+        
+        T getKey();
+        
+        Integer getCount();
+        
+    }
+    
+    Stream<Entry<T, Integer>> stream();
 
 }

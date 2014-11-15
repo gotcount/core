@@ -14,9 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.TreeSet;
+import java.util.Set;
 import java.util.function.Predicate;
-import org.apache.commons.lang3.RandomStringUtils;
 import static org.fest.assertions.api.Assertions.*;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -378,8 +377,8 @@ public class BitMapCollectionTest {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d3", v -> (int) v > (int) td[3].values[2]);
         
-        final TreeSet<Value> actualKeySet = instance.histogram("d0", filter).keySet(true);
-        final TreeSet expectedKeySet = td[0].getHistogram().keySet(true);
+        final Set<Value> actualKeySet = instance.histogram("d0", filter).keySet();
+        final Set<Value> expectedKeySet = td[0].getHistogram().keySet();
         
         assertThat(actualKeySet).containsAll(expectedKeySet);
         

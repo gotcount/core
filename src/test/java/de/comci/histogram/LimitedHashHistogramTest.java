@@ -5,6 +5,7 @@
  */
 package de.comci.histogram;
 
+import java.util.PriorityQueue;
 import org.junit.Test;
 import static org.fest.assertions.api.Assertions.assertThat;
 import org.junit.Before;
@@ -16,7 +17,7 @@ import org.junit.Before;
 public class LimitedHashHistogramTest extends HashHistogramTest {
     
     Histogram h2;
-    
+        
     @Before
     @Override
     public void eachTest() {
@@ -38,7 +39,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("b", 4);
         t3.set("c", 8);
         t3.set("d", 7);
-        assertThat(t3.keySet(false)).containsExactly("c", "d", "a");
+        assertThat(t3.keySet()).containsOnly("c", "d", "a");
     }
 
     @Test
@@ -48,7 +49,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("b", 4);
         t3.set("c", 8);
         t3.set("d", 7);
-        assertThat(t3.keySet(true)).containsExactly("b", "a", "d");
+        assertThat(t3.keySet()).containsOnly("b", "a", "d");
     }
 
     @Test
@@ -57,7 +58,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("a", 5);
         t3.set("b", 4);
         t3.set("c", 8);
-        assertThat(t3.keySet(false)).containsExactly("c", "a", "b");
+        assertThat(t3.keySet()).containsOnly("c", "a", "b");
     }
 
     @Test
@@ -66,7 +67,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("a", 5);
         t3.set("b", 4);
         t3.set("c", 8);
-        assertThat(t3.keySet(false)).containsExactly("c", "a", "b");
+        assertThat(t3.keySet()).containsOnly("c", "a", "b");
     }
 
     @Test
@@ -75,7 +76,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("a", 5);
         t3.set("b", 4);
         t3.set("c", 8);
-        assertThat(t3.keySet(true)).containsExactly("b", "a", "c");
+        assertThat(t3.keySet()).containsOnly("b", "a", "c");
     }
 
     @Test
@@ -84,7 +85,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("a", 5);
         t3.set("b", 4);
         t3.set("c", 8);
-        assertThat(t3.keySet(true)).containsExactly("b", "a", "c");
+        assertThat(t3.keySet()).containsOnly("b", "a", "c");
     }
     
     @Test
@@ -95,7 +96,7 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
         t3.set("c", 5);
         t3.set("d", 5);
         t3.set("e", 5);
-        assertThat(t3.keySet(false)).containsExactly("a", "b", "c");
+        assertThat(t3.keySet()).containsOnly("a", "b", "c");
     }
     
     @Test

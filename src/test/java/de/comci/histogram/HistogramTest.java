@@ -7,10 +7,7 @@ package de.comci.histogram;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
-import de.comci.bitmap.Value;
-import java.util.HashMap;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -45,7 +42,7 @@ public abstract class HistogramTest {
     @Test
     public void setNonExistentToValue() {
         instance.set("a", 1);
-        assertThat(instance.keySet(true)).containsOnly("a");
+        assertThat(instance.keySet()).containsOnly("a");
         assertThat(instance.get("a")).isEqualTo(1);
     }
 
@@ -53,7 +50,7 @@ public abstract class HistogramTest {
     public void setExistentToValue() {
         instance.set("a", 1);
         instance.set("a", 2);
-        assertThat(instance.keySet(true)).containsOnly("a");
+        assertThat(instance.keySet()).containsOnly("a");
         assertThat(instance.get("a")).isEqualTo(2);
     }
 
@@ -61,7 +58,7 @@ public abstract class HistogramTest {
     public void setExistentToZero() {
         instance.set("a", 1);
         instance.set("a", 0);
-        assertThat(instance.keySet(true)).containsOnly("a");
+        assertThat(instance.keySet()).containsOnly("a");
         assertThat(instance.get("a")).isEqualTo(0);
     }
 
@@ -118,68 +115,57 @@ public abstract class HistogramTest {
     }
 
     @Test
-    public void sortedKeySetAsc() {
+    public void keySet() {
         instance.set("a", 5);
         instance.set("b", 9);
         instance.set("c", 2);
-        assertThat(instance.keySet(true)).containsExactly("c", "a", "b");
+        assertThat(instance.keySet()).containsOnly("c", "a", "b");
     }
-
-    @Test
-    public void sortedKeySetDesc() {
-        instance.set("a", 5);
-        instance.set("b", 9);
-        instance.set("c", 2);
-        assertThat(instance.keySet(false)).containsExactly("b", "a", "c");
-    }
-
+    
     @Test
     public void emptyKeySet() {
-        assertThat(instance.keySet(true)).isEmpty();
+        assertThat(instance.keySet()).isEmpty();
+    }
+    
+    @Test
+    public void remove() {
+        instance.set("a", 4);
+        instance.set("b", 6);
+        instance.set("c", 4);
+        assertThat(instance.remove("a")).isEqualTo(4);
+        assertThat(instance.keySet()).containsOnly("c", "b");
     }
 
     @Test
-    public void sortedEntrySetAsc() {
+    public void iterator() {
         instance.set("a", 5);
         instance.set("b", 9);
         instance.set("c", 2);
-        assertThat(instance.entrySet(true))
-                .containsExactly(
-                        new HashMap.SimpleEntry<>("c", 2),
-                        new HashMap.SimpleEntry<>("a", 5),
-                        new HashMap.SimpleEntry<>("b", 9));
-    }
-
-    @Test
-    public void sortedEntrySetDesc() {
-        instance.set("a", 5);
-        instance.set("b", 9);
-        instance.set("c", 2);
-        assertThat(instance.entrySet(false))
-                .containsExactly(
-                        new HashMap.SimpleEntry<>("b", 9),
-                        new HashMap.SimpleEntry<>("a", 5),
-                        new HashMap.SimpleEntry<>("c", 2));
+        assertThat(instance)
+                .containsOnly(
+                        new HashHistogram.SimpleEntry<>("c", 2),
+                        new HashHistogram.SimpleEntry<>("a", 5),
+                        new HashHistogram.SimpleEntry<>("b", 9));
     }
 
     @Test
     public void sameCountForDifferentItemsCanActuallyHappen() {
 
-        Multiset<Double> multiset = HashMultiset.create();
-        multiset.add(16.0, 105);
-        multiset.add(2.0, 197);
-        multiset.add(21.0, 97);
-        multiset.add(15.0, 107);
-        multiset.add(5.0, 204);
-        multiset.add(7.0, 183);
-        multiset.add(9.0, 107);
+        Multiset<String> multiset = HashMultiset.create();
+        multiset.add("a", 105);
+        multiset.add("b", 197);
+        multiset.add("c", 97);
+        multiset.add("d", 107);
+        multiset.add("e", 204);
+        multiset.add("f", 183);
+        multiset.add("g", 107);
 
-        Histogram<Value<Double>> h = new HashHistogram();
-        for (Double t : multiset.elementSet()) {
-            h.set(Value.get(t), multiset.count(t));
+        Histogram<String> h = getInstance();
+        for (String t : multiset.elementSet()) {
+            h.set(t, multiset.count(t));
         }
 
-        assertThat(h.keySet(true)).containsAll(multiset.elementSet().stream().map(d -> Value.get(d)).collect(Collectors.toSet()));
+        assertThat(h.keySet()).containsAll(multiset.elementSet());
 
     }
 

@@ -5,13 +5,14 @@
  */
 package de.comci.histogram;
 
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.TreeSet;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class HashHistogram<T> implements Histogram<T> {
 
     private final Map<T, Integer> map = new HashMap<>();
-
+    
     @Override
     public void set(T t, int count) {
         map.compute(t, (k, v) -> {
@@ -30,8 +31,8 @@ public class HashHistogram<T> implements Histogram<T> {
     }
 
     @Override
-    public void remove(T t) {
-        map.remove(t);
+    public Integer remove(T t) {
+        return map.remove(t);
     }
 
     @Override
@@ -59,38 +60,6 @@ public class HashHistogram<T> implements Histogram<T> {
     }
 
     @Override
-    public TreeSet<T> keySet(boolean ascending) {
-
-        Comparator<T> c = (a, b) -> ifZero(map.get(a).compareTo(map.get(b)), 1);
-        if (!ascending) {
-            c = (a, b) -> ifZero(map.get(b).compareTo(map.get(a)),1);
-        }
-        
-        TreeSet<T> t = new TreeSet<>(c);
-        t.addAll(map.keySet());
-        return t;
-
-    }
-    
-    private static int ifZero(int value, int inCase) {
-        return (value == 0) ? inCase : value;
-    }
-
-    @Override
-    public TreeSet<Map.Entry<T, Integer>> entrySet(boolean ascending) {
-
-        Comparator<Map.Entry<T, Integer>> c = (a, b) -> ifZero(a.getValue().compareTo(b.getValue()),1);
-        if (!ascending) {
-            c = (a, b) -> ifZero(b.getValue().compareTo(a.getValue()),1);
-        }
-
-        TreeSet<Map.Entry<T, Integer>> t = new TreeSet<>(c);
-        t.addAll(map.entrySet());
-        return t;
-
-    }
-
-    @Override
     public int hashCode() {
         int hash = 5;
         hash = 17 * hash + Objects.hashCode(this.map);
@@ -114,7 +83,75 @@ public class HashHistogram<T> implements Histogram<T> {
 
     @Override
     public String toString() {
-        return entrySet(true).stream().map(e -> e.getKey().toString() + " -> " + e.getValue()).collect(Collectors.joining(", "));
+        return map.entrySet().stream().map(e -> e.toString()).collect(Collectors.joining(", "));
+    }
+
+    @Override
+    public Iterator<Entry<T, Integer>> iterator() {
+        return stream().iterator();
+    }
+
+    @Override
+    public Set<T> keySet() {
+        return map.keySet();
+    }
+
+    @Override
+    public Stream<Entry<T, Integer>> stream() {
+        return map.entrySet().stream().map(e -> (Entry<T, Integer>)new SimpleEntry<>(e.getKey(), e.getValue()));
+    }
+    
+    public static final class SimpleEntry<T> implements Entry<T, Integer> {
+
+        private final Integer count;
+        private final T key;
+
+        public SimpleEntry(T key, Integer count) {
+            this.key = key;
+            this.count = count;
+        }
+
+        @Override
+        public T getKey() {
+            return key;
+        }
+
+        @Override
+        public Integer getCount() {
+            return count;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 11 * hash + Objects.hashCode(this.count);
+            hash = 11 * hash + Objects.hashCode(this.key);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (!Histogram.Entry.class.isAssignableFrom(obj.getClass())) {
+                return false;
+            }
+            final SimpleEntry<?> other = (SimpleEntry<?>) obj;
+            if (!Objects.equals(this.count, other.count)) {
+                return false;
+            }
+            if (!Objects.equals(this.key, other.key)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s -> %d", key, count);
+        }
+
     }
     
 }
