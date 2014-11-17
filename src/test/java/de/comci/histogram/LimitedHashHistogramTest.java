@@ -6,6 +6,7 @@
 package de.comci.histogram;
 
 import java.util.PriorityQueue;
+import java.util.Random;
 import org.junit.Test;
 import static org.fest.assertions.api.Assertions.assertThat;
 import org.junit.Before;
@@ -102,6 +103,146 @@ public class LimitedHashHistogramTest extends HashHistogramTest {
     @Test
     public void equalsWithHashHistogram() {
         assertThat(h0).isEqualTo(h2);
+    }
+    
+    @Test
+    public void allTheSameValue() {
+        
+        LimitedHashHistogram<String> l = new LimitedHashHistogram<>(2);
+        
+        l.set("a", 5);
+        l.set("b", 5);
+        l.set("c", 5);
+        l.set("d", 5);
+        l.set("e", 5);
+        l.set("f", 5);
+        
+        HashHistogram<String> expected = new HashHistogram<>();
+        expected.set("a", 5);
+        expected.set("b", 5);
+        
+        assertThat(l).isEqualTo(expected);
+        
+    }
+    
+    @Test
+    public void increasingValue() {
+        
+        LimitedHashHistogram<String> l = new LimitedHashHistogram<>(2);
+        
+        l.set("a", 1);
+        l.set("b", 2);
+        l.set("c", 3);
+        l.set("d", 4);
+        l.set("e", 5);
+        l.set("f", 6);
+        l.set("g", 7);
+        l.set("h", 8);
+        l.set("i", 9);
+        l.set("j", 10);
+        l.set("k", 11);
+        l.set("l", 12);
+        
+        HashHistogram<String> expected = new HashHistogram<>();
+        expected.set("l", 12);
+        expected.set("k", 11);
+        
+        assertThat(l).isEqualTo(expected);
+        
+    }
+    
+    @Test
+    public void parabel() {
+        
+        LimitedHashHistogram<String> l = new LimitedHashHistogram<>(2);
+        
+        l.set("a", 1);
+        l.set("b", 2);
+        l.set("c", 3);
+        l.set("d", 4);
+        l.set("e", 5);
+        l.set("f", 6);
+        l.set("g", 6);
+        l.set("h", 5);
+        l.set("i", 4);
+        l.set("j", 3);
+        l.set("k", 2);
+        l.set("l", 1);
+        
+        HashHistogram<String> expected = new HashHistogram<>();
+        expected.set("f", 6);
+        expected.set("g", 6);
+        
+        assertThat(l).isEqualTo(expected);
+        
+    }
+    
+    @Test
+    public void alternating() {
+        
+        LimitedHashHistogram<String> l = new LimitedHashHistogram<>(2);
+        
+        l.set("a", 1);
+        l.set("b", 5);
+        l.set("c", 3);
+        l.set("d", 11);
+        l.set("e", 7);
+        l.set("f", 21);
+        l.set("g", 13);
+        l.set("h", 29);
+        l.set("i", 17);
+        l.set("j", 37);
+        l.set("k", 21);
+        l.set("l", 45);
+        
+        HashHistogram<String> expected = new HashHistogram<>();
+        expected.set("l", 45);
+        expected.set("j", 37);
+        
+        assertThat(l).isEqualTo(expected);
+        
+    }
+    
+    @Test
+    public void lotsOfZeros() {
+        LimitedHashHistogram<String> l = new LimitedHashHistogram<>(2);
+        
+        l.set("a", 1);
+        l.set("b", 0);
+        l.set("c", 0);
+        l.set("d", 0);
+        l.set("e", 5);
+        l.set("f", 0);
+        l.set("g", 0);
+        l.set("h", 0);
+        l.set("i", 9);
+        l.set("j", 3);
+        l.set("k", 0);
+        l.set("l", 0);
+        
+        HashHistogram<String> expected = new HashHistogram<>();
+        expected.set("i", 9);
+        expected.set("e", 5);
+        
+        assertThat(l).isEqualTo(expected);
+    }
+    
+    @Test
+    public void setExistingKey() {
+        
+        LimitedHashHistogram<String> l = new LimitedHashHistogram<>(2);
+        
+        l.set("a", 1);
+        l.set("b", 2);
+        l.set("c", 3);
+        l.set("b", 4);
+        
+        HashHistogram<String> expected = new HashHistogram<>();
+        expected.set("b", 4);
+        expected.set("c", 3);
+        
+        assertThat(l).isEqualTo(expected);
+        
     }
 
     @Override

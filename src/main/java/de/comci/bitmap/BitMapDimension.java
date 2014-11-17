@@ -163,6 +163,7 @@ public class BitMapDimension<T> implements Dimension {
             if (limit > 0) {
                 currentLimit = Math.max(currentLimit, currentValueCount);
             }
+
         }
 
         return histogram;

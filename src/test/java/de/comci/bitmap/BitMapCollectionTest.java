@@ -9,6 +9,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
+import de.comci.histogram.LimitedHashHistogram;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -310,8 +311,35 @@ public class BitMapCollectionTest {
             assertThat(e).hasMessage("must build before querying");
         }
     }
-    
-   
+
+    @Test
+    public void veryTinyResultset() {
+
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .build();
+
+        instance.add(new Object[]{1, 1});
+        instance.add(new Object[]{1, 2});
+        instance.add(new Object[]{3, 1});
+        instance.add(new Object[]{4, 1});
+        instance.add(new Object[]{5, 1});
+        instance.add(new Object[]{4, 1});
+
+        instance.build();
+        
+        Map<String,Predicate> filter = new HashMap<>();
+        filter.put("d1", p -> ((int)p) == 2);
+                
+        Histogram<Value> actual = instance.histogram("d0", filter, 1);
+        
+        Histogram<Value> expected = new LimitedHashHistogram<>(1);
+        expected.set(Value.get(1), 1);
+        
+        assertThat(actual).isEqualTo(expected);
+
+    }
 
     @Test//(timeout = 200)
     public void sizeTest1k() {
@@ -376,12 +404,12 @@ public class BitMapCollectionTest {
         // all values in histogram
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d3", v -> (int) v > (int) td[3].values[2]);
-        
+
         final Set<Value> actualKeySet = instance.histogram("d0", filter).keySet();
         final Set<Value> expectedKeySet = td[0].getHistogram().keySet();
-        
+
         assertThat(actualKeySet).containsAll(expectedKeySet);
-        
+
         // test histogram values
         for (int i = 0; i < 7; i++) {
             assertThat(instance.histogram("d" + i)).isEqualTo(td[i].getHistogram());
