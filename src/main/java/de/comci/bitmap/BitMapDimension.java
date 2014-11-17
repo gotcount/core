@@ -1,15 +1,11 @@
 package de.comci.bitmap;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Multiset.Entry;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import de.comci.histogram.Histogram;
 import de.comci.histogram.LimitedHashHistogram;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -129,7 +125,7 @@ public class BitMapDimension<T> implements Dimension {
 
         List<Map.Entry<Value<T>, EWAHCompressedBitmap>> sublist;
         if (limit > 0) {
-            sublist = sortedMaps.subList(0, limit);
+            sublist = sortedMaps.subList(0, Math.min(limit, sortedMaps.size()));
         } else if (limit < 0) {
             int from = Math.max(sortedMaps.size() + limit, 0);
             int to = sortedMaps.size();
