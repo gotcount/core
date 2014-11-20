@@ -16,11 +16,11 @@ import java.util.function.Predicate;
  * @author Sebastian Maier (sebastian.maier@comci.de)
  * @param <T>
  */
-public class BitMapDimension<T> implements Dimension {
+public class BitMapDimension<T> implements Dimension<T> {
 
     private final String name;
     private final Class<T> clasz;
-    private final Map<Value<T>, EWAHCompressedBitmap> bitmap = new HashMap<>();
+    final Map<Value<T>, EWAHCompressedBitmap> bitmap = new HashMap<>();
     final List<Map.Entry<Value<T>, EWAHCompressedBitmap>> sortedMaps = new ArrayList<>();
     final int index;
 
@@ -72,13 +72,14 @@ public class BitMapDimension<T> implements Dimension {
         this.clasz = clasz;
     }
 
-    void set(int row, T value) {
+    BitMapDimension<T> set(int row, T value) {
         final Value valueObject = new Value(value, clasz);
         bitmap.computeIfAbsent(valueObject, k -> {
             final EWAHCompressedBitmap map = new EWAHCompressedBitmap();
             sortedMaps.add(new AbstractMap.SimpleImmutableEntry<>(valueObject, map));
             return map;
         }).set(row);
+        return this;
     }
 
     int count(T value) {
