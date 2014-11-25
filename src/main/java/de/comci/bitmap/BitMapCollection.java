@@ -201,10 +201,6 @@ public class BitMapCollection {
         
         checkReadyState(dimension);
         
-        if (filters.containsKey(dimension)) {
-            throw new IllegalArgumentException("cannot filter on histogram dimension");
-        }
-
         long start = System.currentTimeMillis();
         EWAHCompressedBitmap filter = EWAHCompressedBitmap.and(
                 dimensions.entrySet().parallelStream()

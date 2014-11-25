@@ -259,23 +259,7 @@ public class BitMapCollectionTest {
 
         assertThat(instance.histogram("d0", filter)).isEqualTo(d0map);
     }
-
-    @Test
-    public void histogramWithItselfInFilter() {
-
-        instance.build();
-
-        Map<String, Predicate> filter = new HashMap<>();
-        filter.put("d0", v -> v.equals("123"));
-
-        try {
-            instance.<String>histogram("d0", filter);
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("cannot filter on histogram dimension");
-        }
-    }
-
+   
     @Test
     public void histogramWithoutBuild() {
 
@@ -339,6 +323,32 @@ public class BitMapCollectionTest {
         
         assertThat(actual).isEqualTo(expected);
 
+    }
+    
+    @Test
+    public void filterOnCountDimension() {
+        
+         instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .build();
+
+        instance.add(new Object[]{1, 1});
+        instance.add(new Object[]{2, 2});
+        instance.add(new Object[]{3, 1});
+        instance.add(new Object[]{4, 2});
+        
+        instance.build();
+        
+        Map<String,Predicate> filter = new HashMap<>();
+        filter.put("d1", p -> ((int)p) == 1);
+                
+        Histogram<Value> actual = instance.histogram("d1", filter, 1);
+        
+        Histogram<Value> expected = new LimitedHashHistogram<>(1);
+        expected.set(Value.get(1), 2);
+        
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test//(timeout = 200)
