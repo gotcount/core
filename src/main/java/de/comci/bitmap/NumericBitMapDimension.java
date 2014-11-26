@@ -20,11 +20,11 @@ public class NumericBitMapDimension<N extends Number> extends BitMapDimension<N>
     @Override
     public double getExpectedValue() {
         return bitmap.entrySet()
-                     .parallelStream()
-                     .collect(
+                .parallelStream()
+                .collect(
                         Collectors.summingDouble(e -> {
-                            return e.getKey().getValue().doubleValue() 
-                                * e.getValue().cardinality();
+                            return e.getKey().getValue().doubleValue()
+                            * e.getValue().cardinality();
                         })) / getCardinality();
     }
 
@@ -33,11 +33,49 @@ public class NumericBitMapDimension<N extends Number> extends BitMapDimension<N>
         final double exp = getExpectedValue();
         final long size = getCardinality();
         return bitmap.entrySet()
-                     .parallelStream()
-                     .collect(
+                .parallelStream()
+                .collect(
                         Collectors.summingDouble(e -> {
-                            return Math.pow(e.getKey().getValue().doubleValue() - exp, 2) * ((double)e.getValue().cardinality() / size);
-                        }));
+                            return Math.pow(e.getKey().getValue().doubleValue() - exp, 2);
+                        })) / size;
     }
-    
+
+    @Override
+    public double getCovariance(NumericDimension<N> nd) {
+
+        final NumericBitMapDimension<N> nbd = (NumericBitMapDimension)nd;
+        double expX = getExpectedValue();
+        double expY = nd.getExpectedValue();
+
+        double cov = bitmap.entrySet().parallelStream().collect(Collectors.summingDouble(outer -> {
+            double x = outer.getKey().getValue().doubleValue() - expX;
+            return nbd.bitmap.entrySet().parallelStream().collect(Collectors.summingDouble(inner -> {
+                double y = inner.getKey().getValue().doubleValue() - expY;
+                return (x*y) * outer.getValue().andCardinality(inner.getValue());
+            }));
+        })) / (getCardinality() - 1);
+
+        return cov;
+    }
+
+    @Override
+    public double getPearsonCorrelationCoefficient(NumericDimension<N> nd) {
+        final NumericBitMapDimension<N> nbd = (NumericBitMapDimension)nd;
+        double expX = getExpectedValue();
+        double expY = nd.getExpectedValue();
+
+        double sigX = getVariance() * getCardinality();
+        double sigY = nd.getVariance() * getCardinality();
+        
+        double p = bitmap.entrySet().parallelStream().collect(Collectors.summingDouble(outer -> {
+            double x = outer.getKey().getValue().doubleValue() - expX;
+            return nbd.bitmap.entrySet().parallelStream().collect(Collectors.summingDouble(inner -> {
+                double y = inner.getKey().getValue().doubleValue() - expY;
+                return (x*y) * outer.getValue().andCardinality(inner.getValue());
+            }));
+        })) / Math.sqrt(sigX * sigY);
+
+        return p;
+    }
+
 }

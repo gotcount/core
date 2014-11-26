@@ -15,4 +15,8 @@ public interface NumericDimension<N extends Number> extends Dimension<N> {
     
     double getVariance();
     
+    double getCovariance(NumericDimension<N> nd);
+    
+    double getPearsonCorrelationCoefficient(NumericDimension<N> nd);
+    
 }
