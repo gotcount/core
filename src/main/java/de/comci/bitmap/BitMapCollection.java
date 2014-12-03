@@ -50,7 +50,7 @@ public class BitMapCollection {
         data.forEach(d -> add(d));
         return this;
     }
-    
+
     /**
      * Add a data tuple
      *
@@ -84,7 +84,7 @@ public class BitMapCollection {
         }
 
         this.raw.add(data);
-      
+
         return this;
     }
 
@@ -103,20 +103,20 @@ public class BitMapCollection {
     BitMapCollection build() {
         long start = System.currentTimeMillis();
         int rows = raw.size();
-        
+
         LOG.info(String.format(Locale.ENGLISH, "building map for %,d row", rows));
 
         dimensions.values().parallelStream().forEach(d -> {
             for (int i = 0; i < rows; i++) {
-                d.set(i, raw.get(i)[d.index]);                
+                d.set(i, raw.get(i)[d.index]);
             }
             LOG.info(String.format("dimension '%s' built", d.getName()));
         });
-        
+
         // sort dimension lists
         dimensions.values().parallelStream().forEach(d -> {
             d.build();
-        });        
+        });
 
         this.size += rows;
 
@@ -151,6 +151,28 @@ public class BitMapCollection {
     }
 
     /**
+     * Will return the size after applying the supplied filters. E.g. the number
+     * of rows in the collection satisfying all filter conditions at once.
+     *
+     * @param filters
+     * @return
+     */
+    public int size(Map<String, Predicate> filters) {
+
+        if (filters == null || filters.isEmpty()) {
+            return size();
+        }
+
+        long start = System.currentTimeMillis();
+        EWAHCompressedBitmap filter = getFilter(filters);
+        long filterOp = System.currentTimeMillis() - start;
+
+        LOG.info(String.format(Locale.ENGLISH, "count with filters created in %,d ms", filterOp));
+
+        return filter.cardinality();
+    }
+
+    /**
      * Get histogram for single dimension
      *
      * @param <T> type of the dimensions values, must be constistent with
@@ -166,7 +188,7 @@ public class BitMapCollection {
     public Histogram<Value> histogram(String dimension, int limit) {
 
         checkReadyState(dimension);
-        
+
         long start = System.currentTimeMillis();
         final Histogram<Value> histogram = dimensions.get(dimension).histogram(limit);
         long histogramOp = System.currentTimeMillis() - start;
@@ -192,22 +214,17 @@ public class BitMapCollection {
     public Histogram<Value> histogram(String dimension, Map<String, Predicate> filters) {
         return histogram(dimension, filters, 0);
     }
-    
+
     public Histogram<Value> histogram(String dimension, Map<String, Predicate> filters, int topN) {
-        
+
         if (filters == null || filters.isEmpty()) {
-            return histogram(dimension, topN);            
+            return histogram(dimension, topN);
         }
-        
+
         checkReadyState(dimension);
-        
+
         long start = System.currentTimeMillis();
-        EWAHCompressedBitmap filter = EWAHCompressedBitmap.and(
-                dimensions.entrySet().parallelStream()
-                    .filter(e -> filters.containsKey(e.getKey()))
-                    .map(e -> e.getValue().filter(filters.get(e.getKey())))
-                    .toArray(s -> new EWAHCompressedBitmap[s])
-            );
+        EWAHCompressedBitmap filter = getFilter(filters);
         long filterOp = System.currentTimeMillis() - start;
 
         start = System.currentTimeMillis();
@@ -217,6 +234,16 @@ public class BitMapCollection {
         LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms with %,d ms for filtering", histogramOp, filterOp));
 
         return histogram;
+    }
+
+    private EWAHCompressedBitmap getFilter(Map<String, Predicate> filters) {
+        EWAHCompressedBitmap filter = EWAHCompressedBitmap.and(
+                dimensions.entrySet().parallelStream()
+                .filter(e -> filters.containsKey(e.getKey()))
+                .map(e -> e.getValue().filter(filters.get(e.getKey())))
+                .toArray(s -> new EWAHCompressedBitmap[s])
+        );
+        return filter;
     }
 
     public int size() {
