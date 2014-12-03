@@ -159,10 +159,11 @@ public class BitMapDimension<T> implements Dimension<T> {
             }
 
             int currentValueCount = filter.andCardinality(e.getValue());
-
-            histogram.set(e.getKey(), currentValueCount);
-            if (limit > 0) {
-                currentLimit = Math.max(currentLimit, currentValueCount);
+            if (currentValueCount > 0) {
+                histogram.set(e.getKey(), currentValueCount);
+                if (limit > 0) {
+                    currentLimit = Math.max(currentLimit, currentValueCount);
+                }
             }
 
         }

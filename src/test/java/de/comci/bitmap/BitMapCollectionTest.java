@@ -209,10 +209,7 @@ public class BitMapCollectionTest {
         instance.build();
 
         Histogram<Value> d0map = new HashHistogram();
-        d0map.set(Value.get("123"), 0);
         d0map.set(Value.empty(String.class), 1);
-        d0map.set(Value.get(""), 0);
-        d0map.set(Value.get("-1"), 0);
         d0map.set(Value.get("3"), 1);
 
         Map<String, Predicate> filter = new HashMap<>();
@@ -227,9 +224,6 @@ public class BitMapCollectionTest {
         instance.build();
 
         Histogram<Value> d0map = new HashHistogram();
-        d0map.set(Value.get("123"), 0);
-        d0map.set(Value.empty(String.class), 0);
-        d0map.set(Value.get(""), 0);
         d0map.set(Value.get("-1"), 1);
         d0map.set(Value.get("3"), 1);
 
@@ -247,8 +241,6 @@ public class BitMapCollectionTest {
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.get("123"), 2);
         d0map.set(Value.empty(String.class), 1);
-        d0map.set(Value.get(""), 0);
-        d0map.set(Value.get("-1"), 0);
         d0map.set(Value.get("3"), 2);
 
         Map<String, Predicate> filter = new HashMap<>();
