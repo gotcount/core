@@ -36,7 +36,7 @@ public class Value<T> implements Comparable<Value<T>> {
             throw new IllegalArgumentException("type must not be null");
         }
         if (value != null && value.getClass() != type) {
-            throw new IllegalArgumentException("types do not match");
+            throw new IllegalArgumentException(String.format("types do not match (%s != %s)", value.getClass(), type));
         }
         this.value = value;
         this.type = type;
