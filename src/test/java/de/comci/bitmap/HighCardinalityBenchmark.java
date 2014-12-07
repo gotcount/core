@@ -7,7 +7,6 @@ package de.comci.bitmap;
 
 import com.carrotsearch.junitbenchmarks.AbstractBenchmark;
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
-import com.google.common.collect.Multiset;
 import de.comci.histogram.Histogram;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,9 +29,10 @@ public class HighCardinalityBenchmark extends AbstractBenchmark {
 
         System.out.println("creating benchmark data");
 
-        BasicSchemaBuilder builder = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.create()
                 .dimension("d0", Integer.class)
-                .dimension("d1", Integer.class);
+                .dimension("d1", Integer.class)
+                .getCollectionBuilder();
 
         for (int i = 0; i < rows; i++) {
             builder.add(i, i % 1000);

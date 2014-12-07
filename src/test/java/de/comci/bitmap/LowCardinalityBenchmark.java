@@ -30,9 +30,10 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
 
         System.out.println("creating benchmark data");
 
-        BasicSchemaBuilder builder = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.create()
                 .dimension("d0", Integer.class)
-                .dimension("d1", Integer.class);
+                .dimension("d1", Integer.class)
+                .getCollectionBuilder();
 
         for (int i = 0; i < rows; i++) {
             builder.add(i % 10, i % 100);

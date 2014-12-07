@@ -5,12 +5,9 @@
  */
 package de.comci.bitmap;
 
-import com.google.common.collect.HashBiMap;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
@@ -35,19 +32,16 @@ public class Bugfixing {
 
         BitMapCollection instance = BitMapCollection.create()
                 .dimension("d0", Date.class)
+                .add(new Object[]{d(LocalDate.now().minusDays(4))})
+                .add(new Object[]{d(LocalDate.now().minusDays(3))})
+                .add(new Object[]{d(LocalDate.now().minusDays(2))})
+                .add(new Object[]{d(LocalDate.now().minusDays(2))})
+                .add(new Object[]{d(LocalDate.now().minusDays(1))})
+                .add(new Object[]{d(LocalDate.now().minusDays(1))})
+                .add(new Object[]{d(LocalDate.now().minusDays(2))})
+                .add(new Object[]{d(LocalDate.now().minusDays(2))})
+                .add(new Object[]{d(LocalDate.now().minusDays(0))})
                 .build();
-
-        instance.add(new Object[]{d(LocalDate.now().minusDays(4))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(3))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(2))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(2))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(1))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(1))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(2))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(2))});
-        instance.add(new Object[]{d(LocalDate.now().minusDays(0))});
-
-        instance.build();
 
         Histogram expected = new HashHistogram();
         expected.set(Value.get(d(LocalDate.now().minusDays(3))), 1);
@@ -62,9 +56,9 @@ public class Bugfixing {
     @Test
     public void filterDateColumn() {
 
-        BitMapCollection instance = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.create()
                 .dimension("d0", LocalDate.class)
-                .build();
+                .getCollectionBuilder();
 
         int size = 1000;
         for (int i = 0; i < size; i++) {
@@ -78,10 +72,10 @@ public class Bugfixing {
             if (i % 37 == 0) {
                 d = 17;
             }
-            instance.add(new Object[]{LocalDate.now().minusDays(d)});
+            builder.add(new Object[]{LocalDate.now().minusDays(d)});
         }
 
-        instance.build();
+        BitMapCollection instance = builder.build();
 
         Histogram expected = new HashHistogram();
         expected.set(Value.get(LocalDate.now().minusDays(5)), 77);

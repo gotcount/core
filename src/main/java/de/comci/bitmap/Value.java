@@ -16,14 +16,14 @@ public class Value<T> implements Comparable<Value<T>> {
 
     private final T value;
     private final Class<T> type;
-    
+
     public static <T> Value<T> get(T value) {
         if (value == null) {
             throw new IllegalArgumentException("null not allowed");
         }
         return new Value(value, value.getClass());
     }
-    
+
     public static <T> Value<T> empty(Class<T> type) {
         if (type == null) {
             throw new IllegalArgumentException("null not allowed");
@@ -35,8 +35,8 @@ public class Value<T> implements Comparable<Value<T>> {
         if (type == null) {
             throw new IllegalArgumentException("type must not be null");
         }
-        if (value != null && value.getClass() != type) {
-            throw new IllegalArgumentException(String.format("types do not match (%s != %s)", value.getClass(), type));
+        if (value != null && !type.isAssignableFrom(value.getClass())) {
+            throw new IllegalArgumentException(String.format("type is not assignable (%s != %s)", value.getClass(), type));
         }
         this.value = value;
         this.type = type;
@@ -49,8 +49,8 @@ public class Value<T> implements Comparable<Value<T>> {
     public Class<T> getType() {
         return type;
     }
-    
-    public String getLabel() {        
+
+    public String getLabel() {
         return (value != null) ? value.toString() : "null";
     }
 
@@ -61,7 +61,7 @@ public class Value<T> implements Comparable<Value<T>> {
             if (this.type != o.type) {
                 throw new IllegalArgumentException("cannot compare values of different type");
             }
-            if (this.value != null && o.value != null) {                
+            if (this.value != null && o.value != null) {
                 if (Comparable.class.isAssignableFrom(this.type)) {
                     c = ((Comparable) this.value).compareTo(o.value);
                 }
@@ -96,5 +96,5 @@ public class Value<T> implements Comparable<Value<T>> {
     public String toString() {
         return String.format("<%s:%s>", type.getSimpleName(), (value == null) ? "null" : value.toString());
     }
-    
+
 }

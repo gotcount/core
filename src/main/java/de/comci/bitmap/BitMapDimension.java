@@ -53,14 +53,14 @@ public class BitMapDimension<T> implements Dimension<T> {
         if (obj == null) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!Dimension.class.isAssignableFrom(obj.getClass())) {
             return false;
         }
-        final BitMapDimension<?> other = (BitMapDimension<?>) obj;
-        if (!Objects.equals(this.name, other.name)) {
+        final Dimension<?> other = (Dimension<?>) obj;
+        if (!Objects.equals(this.name, other.getName())) {
             return false;
         }
-        if (!Objects.equals(this.clasz, other.clasz)) {
+        if (!Objects.equals(this.clasz, other.getType())) {
             return false;
         }
         return true;

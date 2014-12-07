@@ -62,7 +62,7 @@ public class ValueTest {
             Value v = new Value("str", Integer.class);
             fail("missing exception");
         } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage()).isEqualTo("types do not match");
+            assertThat(e.getMessage()).isEqualTo("type is not assignable (class java.lang.String != class java.lang.Integer)");
         }
     }
 

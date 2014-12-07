@@ -61,15 +61,15 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
+                .add(new Object[]{"123", 123})
+                .add(new Object[]{null, 1})
+                .add(new Object[]{"", 0})
+                .add(new Object[]{"-1", -1})
+                .add(new Object[]{"123", 5})
+                .add(new Object[]{"3", 123})
+                .add(new Object[]{"3", 1})
+                .add(new Object[]{"3", -1})
                 .build();
-        instance.add(new Object[]{"123", 123});
-        instance.add(new Object[]{null, 1});
-        instance.add(new Object[]{"", 0});
-        instance.add(new Object[]{"-1", -1});
-        instance.add(new Object[]{"123", 5});
-        instance.add(new Object[]{"3", 123});
-        instance.add(new Object[]{"3", 1});
-        instance.add(new Object[]{"3", -1});
     }
 
     @After
@@ -84,16 +84,13 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
+                .add(new Object[]{"123", 123})
+                .add(new Object[]{null, 1})
+                .add(new Object[]{"", 0})
+                .add(new Object[]{"-1", -1})
+                .add(new Object[]{"123", 5})
+                .add(new Object[]{"3", 123})
                 .build();
-
-        instance.add(new Object[]{"123", 123});
-        instance.add(new Object[]{null, 1});
-        instance.add(new Object[]{"", 0});
-        instance.add(new Object[]{"-1", -1});
-        instance.add(new Object[]{"123", 5});
-        instance.add(new Object[]{"3", 123});
-
-        instance.build();
 
         assertThat(instance.count("d0", "123")).isEqualTo(2);
         assertThat(instance.count("d0", "3")).isEqualTo(1);
@@ -107,25 +104,22 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
+                .add(new Object[]{"123", 123})
+                .add(new Object[]{null, 1})
+                .add(new Object[]{"", 0})
+                .add(new Object[]{"-1", -1})
+                .add(new Object[]{"123", 5})
+                .add(new Object[]{"3", 123})
                 .build();
 
-        instance.add(new Object[]{"123", 123});
-        instance.add(new Object[]{null, 1});
-        instance.add(new Object[]{"", 0});
-        instance.add(new Object[]{"-1", -1});
-        instance.add(new Object[]{"123", 5});
-        instance.add(new Object[]{"3", 123});
-
-        instance.build();
-        
         Map<String, Predicate> filter = new HashMap<>();
-        
+
         filter.put("d1", v -> (int) v == 123);
         assertThat(instance.size(filter)).isEqualTo(2);
-        
+
         filter.put("d1", v -> (int) v == 1);
         assertThat(instance.size(filter)).isEqualTo(1);
-        
+
         filter.put("d0", v -> v == "1");
         assertThat(instance.size(filter)).isEqualTo(0);
     }
@@ -281,28 +275,6 @@ public class BitMapCollectionTest {
     }
 
     @Test
-    public void histogramWithoutBuild() {
-
-        try {
-            instance.<String>histogram("d0");
-            failBecauseExceptionWasNotThrown(IllegalStateException.class);
-        } catch (IllegalStateException e) {
-            assertThat(e).hasMessage("must build before querying");
-        }
-    }
-
-    @Test
-    public void countWithoutBuild() {
-
-        try {
-            instance.count("d0", "123");
-            failBecauseExceptionWasNotThrown(IllegalStateException.class);
-        } catch (IllegalStateException e) {
-            assertThat(e).hasMessage("must build before querying");
-        }
-    }
-
-    @Test
     public void addAfterBuiltWithoutAdditionalBuild() {
 
         instance.build();
@@ -322,14 +294,13 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{1, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 1})
+                .add(new Object[]{5, 1})
+                .add(new Object[]{4, 1})
                 .build();
-
-        instance.add(new Object[]{1, 1});
-        instance.add(new Object[]{1, 2});
-        instance.add(new Object[]{3, 1});
-        instance.add(new Object[]{4, 1});
-        instance.add(new Object[]{5, 1});
-        instance.add(new Object[]{4, 1});
 
         instance.build();
 
@@ -351,14 +322,11 @@ public class BitMapCollectionTest {
         instance = BitMapCollection.create()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
                 .build();
-
-        instance.add(new Object[]{1, 1});
-        instance.add(new Object[]{2, 2});
-        instance.add(new Object[]{3, 1});
-        instance.add(new Object[]{4, 2});
-
-        instance.build();
 
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", p -> ((int) p) == 1);
@@ -397,7 +365,7 @@ public class BitMapCollectionTest {
     }
 
     private void sizeTestN(int size) {
-        instance = BitMapCollection.create()
+        DimensionBuilder builder = BitMapCollection.create()
                 .dimension("d0", String.class)
                 .dimension("d1", String.class)
                 .dimension("d2", String.class)
@@ -406,8 +374,7 @@ public class BitMapCollectionTest {
                 .dimension("d5", String.class)
                 .dimension("d6", String.class)
                 .dimension("d7", String.class)
-                .dimension("d8", String.class)
-                .build();
+                .dimension("d8", String.class);
 
         TestDimension[] td = new TestDimension[]{
             TestDimension.withStrings(10),
@@ -421,15 +388,17 @@ public class BitMapCollectionTest {
             TestDimension.withStrings(1000)
         };
 
+        CollectionBuilder collectionBuilder = builder.getCollectionBuilder();
+
         for (int i = 0; i < size; i++) {
             Object[] data = new Object[td.length];
             for (int d = 0; d < data.length; d++) {
                 data[d] = td[d].get();
             }
-            instance.add(data);
+            collectionBuilder.add(data);
         }
 
-        instance.build();
+        instance = collectionBuilder.build();
 
         // all values in histogram
         Map<String, Predicate> filter = new HashMap<>();

@@ -5,13 +5,12 @@
  */
 package de.comci.bitmap;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,27 +27,14 @@ import org.jooq.tools.jdbc.MockDataProvider;
 import org.jooq.tools.jdbc.MockExecuteContext;
 import org.jooq.tools.jdbc.MockResult;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
-public class DbSchemaBuilderTest {
-
-    public DbSchemaBuilderTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
+public class JooqDimensionBuilderTest {
 
     MyProvider provider;
     MockConnection connection;
@@ -71,14 +57,14 @@ public class DbSchemaBuilderTest {
     @Test
     public void dimensionsReadCorrectly() {
 
-        provider.addField("name", String.class)
-                .addField("gender", String.class)
-                .addField("age", Integer.class)
-                .addRow("a name", "male", 25); 
+        provider.field("name", String.class)
+                .field("gender", String.class)
+                .field("age", Integer.class)
+                .row("a name", "male", 25); 
         
-        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
+        JooqDimensionBuilder instance = new JooqDimensionBuilder(connection, "test", SQLDialect.MYSQL);
         
-        assertThat(instance.build().getDimensions()).containsOnly(
+        assertThat(instance.getCollectionBuilder().build().getDimensions()).containsOnly(
                 new BitMapDimension("name", 0, String.class),
                 new BitMapDimension("gender", 1, String.class),
                 new BitMapDimension("age", 2, Integer.class)
@@ -89,71 +75,78 @@ public class DbSchemaBuilderTest {
     @Test
     public void someDimensionsReadCorrectly() {
 
-        provider.addField("name", String.class)
-                .addField("gender", String.class)
-                .addField("age", Integer.class)
-                .addField("email", String.class)
-                .addRow("a name", "male", 25, "1@2.3")
-                .addRow("another name", "female", 215, "1@2.3")
-                .addRow("a name", "male", 25, "1@2.3");
+        provider.field("name", String.class)
+                .field("gender", String.class)
+                .field("age", Integer.class)
+                .field("email", String.class)
+                .row("a name", "male", 25, "1@2.3")
+                .row("another name", "female", 215, "1@2.3")
+                .row("a name", "male", 25, "1@2.3");
         
-        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL, "name", "age", "gender");
+        JooqDimensionBuilder instance = new JooqDimensionBuilder(connection, "test", SQLDialect.MYSQL);
+        instance.dimension("name", String.class)                
+                .dimension("gender", String.class)
+                .dimension("age", Integer.class);
+        
+        final BitMapCollection collection = instance.getCollectionBuilder().build();
+        
+        Collection<Dimension> actual = collection.getDimensions();
 
-        assertThat(instance.build().getDimensions()).containsOnly(
+        assertThat(actual).containsOnly(
                 new BitMapDimension("name", 0, String.class),
                 new BitMapDimension("age", 1, Integer.class),
                 new BitMapDimension("gender", 2, String.class)
         );
         
-        assertThat(instance.build().size()).isEqualTo(3);
-        assertThat(instance.build().count("name", "a name")).isEqualTo(2);
-        assertThat(instance.build().count("age", 25)).isEqualTo(2);
+        assertThat(collection.size()).isEqualTo(3);
+        assertThat(collection.count("name", "a name")).isEqualTo(2);
+        assertThat(collection.count("age", 25)).isEqualTo(2);
 
     }
     
     @Test
     public void allRowsAdded() {
         
-        provider.addField("name", String.class)
-                .addField("gender", String.class)
-                .addField("age", Integer.class)
-                .addField("email", String.class)
-                .addRow("a name", "male", 1, "1@2")
-                .addRow("a name", "female", 1, "1@3")
-                .addRow("a name", "unknown", 2, "1@5")
-                .addRow("another name", "male", 3, "1@8");
+        provider.field("name", String.class)
+                .field("gender", String.class)
+                .field("age", Integer.class)
+                .field("email", String.class)
+                .row("a name", "male", 1, "1@2")
+                .row("a name", "female", 1, "1@3")
+                .row("a name", "unknown", 2, "1@5")
+                .row("another name", "male", 3, "1@8");
         
-        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
-        assertThat(instance.build().size()).isEqualTo(4);
+        JooqDimensionBuilder instance = new JooqDimensionBuilder(connection, "test", SQLDialect.MYSQL);
+        assertThat(instance.getCollectionBuilder().build().size()).isEqualTo(4);
         
     }
     
     @Test
     public void actuallyWorks() {
         
-        provider.addField("name", String.class)
-                .addField("gender", String.class)
-                .addField("age", Integer.class)
-                .addField("email", String.class)
-                .addRow("a name", "male", 1, "1@2")
-                .addRow("a name", "female", 1, "1@3")
-                .addRow("a name", "unknown", 2, "1@5")
-                .addRow("b name", "male", 3, "1@8")
-                .addRow("b name", "male", 3, "1@8");
+        provider.field("name", String.class)
+                .field("gender", String.class)
+                .field("age", Integer.class)
+                .field("email", String.class)
+                .row("a name", "male", 1, "1@2")
+                .row("a name", "female", 1, "1@3")
+                .row("a name", "unknown", 2, "1@5")
+                .row("b name", "male", 3, "1@8")
+                .row("b name", "male", 3, "1@8");
         
         Histogram<Value> hist = new HashHistogram<>();
         hist.set(Value.get("a name"), 3);
         hist.set(Value.get("b name"), 2);
         
-        DbSchemaBuilder instance = new DbSchemaBuilder(connection, "test", SQLDialect.MYSQL);
-        assertThat(instance.build().histogram("name")).isEqualTo(hist);        
+        JooqDimensionBuilder instance = new JooqDimensionBuilder(connection, "test", SQLDialect.MYSQL);
+        assertThat(instance.getCollectionBuilder().build().histogram("name")).isEqualTo(hist);        
         
     }
     
     @Test
     public void mapDatePrecisionNull() {
         
-        DbSchemaBuilder.Column c = new DbSchemaBuilder.Column("test", String.class, null);
+        JooqDimensionBuilder.Column c = new JooqDimensionBuilder.Column("test", String.class, null);
         Date d = new Date(109,0,1);
         assertThat(c.map(d)).isSameAs(d);
     }
@@ -163,48 +156,50 @@ public class DbSchemaBuilderTest {
        
         // valid values are: 1,2,5,11,12,13,14
         
-        DbSchemaBuilder.Column c = new DbSchemaBuilder.Column("test", String.class, 1.0);
+        JooqDimensionBuilder.Column c = new JooqDimensionBuilder.Column("test", String.class, 1.0, null);
         Date d = new Date(109,0,12);
         assertThat(c.map(d)).isEqualTo(new Date(109,0,1));
         
-        c = new DbSchemaBuilder.Column("test", String.class, 2.0);
+        c = new JooqDimensionBuilder.Column("test", String.class, 2.0, null);
         d = new Date(109,4,12);
         assertThat(c.map(d)).isEqualTo(new Date(109,4,1));
         
-        c = new DbSchemaBuilder.Column("test", String.class, 5.0);
+        c = new JooqDimensionBuilder.Column("test", String.class, 5.0, null);
         d = new Date(109,4,12,5,6);
         assertThat(c.map(d)).isEqualTo(new Date(109,4,12,0,0));
         
-        c = new DbSchemaBuilder.Column("test", String.class, 11.0);
+        c = new JooqDimensionBuilder.Column("test", String.class, 11.0, null);
         d = new Date(109,4,12,5,6);
         assertThat(c.map(d)).isEqualTo(new Date(109,4,12,5,0));
         
-        c = new DbSchemaBuilder.Column("test", String.class, 13.0);
+        c = new JooqDimensionBuilder.Column("test", String.class, 13.0, null);
         d = getDate(2009,4,12,5,6,54,123);
         assertThat(c.map(d)).isEqualTo(getDate(2009, 4, 12, 5, 6, 54, 0));
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void illegalDatePrecision() {
-        DbSchemaBuilder.Column column = new DbSchemaBuilder.Column("12", Date.class, 0.0);
+        JooqDimensionBuilder.Column column = new JooqDimensionBuilder.Column("12", Date.class, 0.0, null);
     }
     
     @Test
     public void readWithLimitedPrecision() {
 
-        provider.addField("date", java.sql.Date.class)
-                .addRow(getDate(2012, 1, 2, 16, 24, 28, 564))
-                .addRow(getDate(2012, 1, 4, 16, 21, 28, 564))
-                .addRow(getDate(2012, 1, 4, 12, 35, 51, 564)); 
+        provider.field("date", java.sql.Date.class)
+                .row(getDate(2012, 1, 2, 16, 24, 28, 564))
+                .row(getDate(2012, 1, 4, 16, 21, 28, 564))
+                .row(getDate(2012, 1, 4, 12, 35, 51, 564)); 
         
-        DbSchemaBuilder instance = new DbSchemaBuilder(
+        JooqDimensionBuilder instance = new JooqDimensionBuilder(
                 connection, 
                 "test", 
-                SQLDialect.MYSQL, 
-                new DbSchemaBuilder.Column("date", Date.class, 5.0)
+                SQLDialect.MYSQL
         );
-        
-        final BitMapCollection collection =  instance.build();
+                
+        final BitMapCollection collection = instance
+                .dimension("date", Date.class, 5.0)
+                .getCollectionBuilder()
+                .build();
         
         assertThat(collection.getDimensions()).containsOnly(
                 new BitMapDimension("date", 0, Date.class)
@@ -236,12 +231,12 @@ public class DbSchemaBuilderTest {
         public MyProvider() {            
         }
         
-        MyProvider addField(String name, Class type) {
+        MyProvider field(String name, Class type) {
             fields.add(DSL.fieldByName(type, name));
             return this;
         }
         
-        MyProvider addRow(Object... row) {
+        MyProvider row(Object... row) {
             if (row.length != fields.size())
                 throw new IllegalArgumentException("row size does not match column count");
             data.add(row);

@@ -27,12 +27,12 @@ public class BitMapCollection {
 
     private final static Logger LOG = LoggerFactory.getLogger(BitMapCollection.class);
 
-    public static BasicSchemaBuilder create() {
-        return new BasicSchemaBuilder();
+    public static DimensionBuilder create() {
+        return new DefaultDimensionBuilder();
     }
 
-    public static DbSchemaBuilder create(Connection conn, String table, String... columns) {
-        return new DbSchemaBuilder(conn, table, columns);
+    public static DimensionBuilder create(Connection conn, String table) {
+        return new JooqDimensionBuilder(conn, table);
     }
 
     private final Map<String, BitMapDimension> dimensions;

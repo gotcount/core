@@ -3,17 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package de.comci.bitmap;
 
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)
  */
-public class BasicSchemaBuilder extends DefaultDimensionBuilder {
-        
-    BasicSchemaBuilder() {
-        // package private constructor
-    }  
+public interface CollectionBuilder {
+    
+    public CollectionBuilder add(Object... data);
+    
+    public BitMapCollection build();
     
 }
