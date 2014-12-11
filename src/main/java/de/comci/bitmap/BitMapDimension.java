@@ -1,15 +1,18 @@
 package de.comci.bitmap;
 
 import com.googlecode.javaewah.EWAHCompressedBitmap;
+import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
 import de.comci.histogram.LimitedHashHistogram;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  *
@@ -144,10 +147,30 @@ public class BitMapDimension<T> implements Dimension<T> {
 
     private Histogram<Value<T>> histogramWithFilter(EWAHCompressedBitmap filter, int limit) {
 
-        Histogram<Value<T>> histogram = new LimitedHashHistogram<>(limit);
+        Histogram<Value<T>> histogram = new HashHistogram<>();
 
+        Comparator<Map.Entry<Value<T>,Integer>> c;
+        if (limit >= 0) {
+            c = (a,b) -> b.getValue() - a.getValue();
+        } else {
+            c = (a,b) -> a.getValue() - b.getValue();
+        }
+        
+        Stream<AbstractMap.SimpleEntry<Value<T>, Integer>> stream = sortedMaps.parallelStream()
+                .map(e -> new HashMap.SimpleEntry<>(e.getKey(), filter.andCardinality(e.getValue())))
+                .filter(e -> e.getValue() > 0)
+                .sorted(c);
+            
+        if (limit != 0) {            
+            stream = stream.limit(Math.abs(limit));
+        }
+        
+        stream.forEach(e -> {
+            histogram.set(e.getKey(), e.getValue());
+        });
+        
+        /*
         int currentLimit = 0;
-
         for (Map.Entry<Value<T>, EWAHCompressedBitmap> e : sortedMaps) {
 
             if (limit > 0
@@ -167,6 +190,7 @@ public class BitMapDimension<T> implements Dimension<T> {
             }
 
         }
+        */
 
         return histogram;
     }

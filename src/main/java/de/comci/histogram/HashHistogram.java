@@ -71,7 +71,7 @@ public class HashHistogram<T> implements Histogram<T> {
         if (obj == null) {
             return false;
         }
-        if (!getClass().isAssignableFrom(obj.getClass())) {
+        if (!HashHistogram.class.isAssignableFrom(obj.getClass())) {
             return false;
         }
         final HashHistogram<?> other = (HashHistogram<?>) obj;

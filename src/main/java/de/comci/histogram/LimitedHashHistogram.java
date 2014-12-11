@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class LimitedHashHistogram<T> extends HashHistogram<T> {
 
     private final int limit;
-    final PriorityQueue<Histogram.Entry<T, Integer>> sortedElements;
+    private final PriorityQueue<Histogram.Entry<T, Integer>> sortedElements;
 
     public LimitedHashHistogram() {
         this(0);
@@ -29,9 +29,9 @@ public class LimitedHashHistogram<T> extends HashHistogram<T> {
 
         Comparator<Entry<T, Integer>> c;
         if (limit < 0) {
-            c = (a, b) -> b.getCount().compareTo(a.getCount());
+            c = (a, b) -> b.getCount() - a.getCount();
         } else {
-            c = (a, b) -> a.getCount().compareTo(b.getCount());
+            c = (a, b) -> a.getCount() - b.getCount();
         }
 
         sortedElements = new PriorityQueue<>(c);
@@ -39,7 +39,7 @@ public class LimitedHashHistogram<T> extends HashHistogram<T> {
 
     @Override
     public void set(T t, int count) {
-
+        
         if (limit != 0 && size() >= Math.abs(limit)) {
             final Entry<T, Integer> last = sortedElements.peek();
             if ((limit > 0 && count > last.getCount())
@@ -67,5 +67,5 @@ public class LimitedHashHistogram<T> extends HashHistogram<T> {
     public String toString() {
         return sortedElements.stream().map(e -> e.getKey().toString() + " -> " + e.getCount()).collect(Collectors.joining(", "));
     }
-
+    
 }

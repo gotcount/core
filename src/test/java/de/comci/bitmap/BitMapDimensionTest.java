@@ -46,14 +46,14 @@ public class BitMapDimensionTest {
     public void histogramWithFilterRemovingWrongValues() {
 
         BitMapDimension<Integer> d = new BitMapDimension("test", 0, Integer.class);
-        add(d, 4, 17);
-        add(d, 5, 16);
-        add(d, 1, 13);
-        add(d, 2, 12);
-        add(d, 3, 11);
-        add(d, 7, 11);
-        add(d, 8, 11);
-        add(d, 10, 15);
+        add(d, 4, 17); // %3 = 1
+        add(d, 5, 16); // %3 = 2
+        add(d, 1, 13); // %3 = 1
+        add(d, 2, 12); // %3 = 2
+        add(d, 3, 22); // %3 = 0
+        add(d, 7, 11); // %3 = 1
+        add(d, 8, 11); // %3 = 2
+        add(d, 10, 15); // %3 = 1
         d.build();
         
         final EWAHCompressedBitmap filter = d.filter(p -> (int)p % 3 != 0);
