@@ -247,6 +247,10 @@ public class BitMapCollection {
     }
     
     public Collection<Object[]> getData(int offset, int limit, String... dimensions) {
+        return getData(offset, limit, Arrays.asList(dimensions));
+    }
+    
+    public Collection<Object[]> getData(int offset, int limit, Collection<String> dimensions) {
         
         if (offset < 0) {
             offset = 0;
@@ -260,10 +264,8 @@ public class BitMapCollection {
             throw new IndexOutOfBoundsException();
         }
         
-        List<String> dimensionsList = Arrays.asList(dimensions);
-        
         List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
-                dimensionsList.stream()
+                dimensions.stream()
                         .filter(d -> this.dimensions.containsKey(d))
                         .map(d -> new HashMap.SimpleEntry<>(d, this.dimensions.get(d)))
                         .collect(Collectors.toList());
@@ -286,7 +288,7 @@ public class BitMapCollection {
         return outputBuffer;
     }
     
-    public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, String... dimensions) {
+    public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, Collection<String> dimensions) {
         
         if (filter == null || filter.isEmpty()) {
             return getData(offset, limit, dimensions);
@@ -306,10 +308,8 @@ public class BitMapCollection {
         
         EWAHCompressedBitmap bitmapFilter = getFilter(filter);
         
-        List<String> dimensionsList = Arrays.asList(dimensions);
-        
         final List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
-                dimensionsList.stream()
+                dimensions.stream()
                         .filter(d -> this.dimensions.containsKey(d))
                         .map(d -> new HashMap.SimpleEntry<>(d, this.dimensions.get(d)))
                         .collect(Collectors.toList());
@@ -329,6 +329,11 @@ public class BitMapCollection {
         });
                 
         return outputBuffer;
+    }
+    
+    public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, String... dimensions) {
+        
+        return getData(filter, offset, limit, Arrays.asList(dimensions));
     }
 
     private EWAHCompressedBitmap getFilter(Map<String, Predicate> filters) {
