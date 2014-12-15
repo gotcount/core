@@ -75,5 +75,43 @@ public class BitMapDimensionTest {
             d.set(row, value);
         }
     }
+    
+    public void testGetSimple() {
+        
+        BitMapDimension<String> d = new BitMapDimension<>("test", 0, String.class);
+        d.set(0, "0");
+        d.set(1, "1");
+        d.set(2, "2");
+        d.set(3, "3");
+        d.set(4, "4");
+        d.set(5, "5");
+        
+        assertThat(d.get(0)).isEqualTo("0");
+        assertThat(d.get(1)).isEqualTo("1");
+        assertThat(d.get(2)).isEqualTo("2");
+        assertThat(d.get(3)).isEqualTo("3");
+        assertThat(d.get(4)).isEqualTo("4");
+        assertThat(d.get(5)).isEqualTo("5");
+        
+    }
+    
+    public void testGetReversed() {
+        
+        BitMapDimension<String> d = new BitMapDimension<>("test", 0, String.class);
+        d.set(0, "5");
+        d.set(1, "4");
+        d.set(2, "3");
+        d.set(3, "2");
+        d.set(4, "1");
+        d.set(5, "0");
+        
+        assertThat(d.get(0)).isEqualTo("5");
+        assertThat(d.get(1)).isEqualTo("4");
+        assertThat(d.get(2)).isEqualTo("3");
+        assertThat(d.get(3)).isEqualTo("2");
+        assertThat(d.get(4)).isEqualTo("1");
+        assertThat(d.get(5)).isEqualTo("0");
+        
+    }
 
 }

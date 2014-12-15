@@ -10,8 +10,10 @@ import com.google.common.collect.Multiset;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
 import de.comci.histogram.LimitedHashHistogram;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
@@ -126,7 +128,6 @@ public class BitMapCollectionTest {
 
     @Test
     public void rowSize() {
-        instance.build();
         assertThat(instance.size()).isEqualTo(8);
     }
 
@@ -186,8 +187,6 @@ public class BitMapCollectionTest {
     @Test
     public void getHistogramForDimension() {
 
-        instance.build();
-
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.get("123"), 2);
         d0map.set(Value.empty(String.class), 1);
@@ -201,8 +200,6 @@ public class BitMapCollectionTest {
     @Test
     public void getHistogramForDimensionTop2() {
 
-        instance.build();
-
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.get("3"), 3);
         d0map.set(Value.get("123"), 2);
@@ -213,8 +210,6 @@ public class BitMapCollectionTest {
 
     @Test
     public void getHistogramForDimensionBottom3() {
-
-        instance.build();
 
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.empty(String.class), 1);
@@ -227,8 +222,6 @@ public class BitMapCollectionTest {
 
     @Test
     public void histogramWithFiltersEquals1() {
-
-        instance.build();
 
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.empty(String.class), 1);
@@ -243,8 +236,6 @@ public class BitMapCollectionTest {
     @Test
     public void histogramWithFiltersLessThen0() {
 
-        instance.build();
-
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.get("-1"), 1);
         d0map.set(Value.get("3"), 1);
@@ -257,8 +248,6 @@ public class BitMapCollectionTest {
 
     @Test
     public void histogramWithFiltersGreaterThen0() {
-
-        instance.build();
 
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.get("123"), 2);
@@ -276,8 +265,6 @@ public class BitMapCollectionTest {
 
     @Test
     public void addAfterBuiltWithoutAdditionalBuild() {
-
-        instance.build();
 
         try {
             instance.add(new Object[]{"123", 123});
@@ -301,8 +288,6 @@ public class BitMapCollectionTest {
                 .add(new Object[]{5, 1})
                 .add(new Object[]{4, 1})
                 .build();
-
-        instance.build();
 
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", p -> ((int) p) == 2);
@@ -337,6 +322,101 @@ public class BitMapCollectionTest {
         expected.set(Value.get(1), 2);
 
         assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void getDataWithoutFilter() {
+
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
+                .build();
+
+        Collection<Object[]> expected = new LinkedList<>();
+        expected.add(new Object[]{1, 1});
+        expected.add(new Object[]{2, 2});
+        expected.add(new Object[]{3, 1});
+        expected.add(new Object[]{4, 2});
+
+        Map<String, Predicate> filter = new HashMap<>();
+
+        Collection<Object[]> actual = instance.getData(filter, 0, 100, "d0", "d1");
+
+        assertThat(actual.toArray()).containsOnly(expected.toArray());
+
+    }
+
+    @Test
+    public void getDataWithSimpleFilter() {
+
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
+                .build();
+
+        Map<String, Predicate> filter = new HashMap<>();
+        filter.put("d1", p -> ((int) p) == 1);
+        Collection<Object[]> actual = instance.getData(filter, 0, 100, "d0", "d1");
+
+        Collection<Object[]> expected = new LinkedList<>();
+        expected.add(new Object[]{1, 1});
+        expected.add(new Object[]{3, 1});
+
+        assertThat(actual.toArray()).containsOnly(expected.toArray());
+
+    }
+
+    @Test
+    public void getDataPaged() {
+
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
+                .build();
+
+        Collection<Object[]> expected = new LinkedList<>();
+        expected.add(new Object[]{2, 2});
+
+        Map<String, Predicate> filter = new HashMap<>();
+
+        Collection<Object[]> actual = instance.getData(filter, 1, 1, "d0", "d1");
+
+        assertThat(actual.toArray()).containsOnly(expected.toArray());
+    }
+
+    @Test
+    public void getDataPagedWithFilter() {
+        
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
+                .build();
+        
+        Map<String, Predicate> filter = new HashMap<>();        
+        filter.put("d1", p -> ((int) p) == 1);
+        Collection<Object[]> actual = instance.getData(filter, 0, 1, "d0", "d1");
+
+        LinkedList<Object[]> expected = new LinkedList<>();
+        expected.add(new Object[]{1, 1});
+
+        assertThat(actual.toArray()).containsOnly(expected.toArray());
+
     }
 
     @Test//(timeout = 200)
@@ -407,6 +487,7 @@ public class BitMapCollectionTest {
         final Set<Value> actualKeySet = instance.histogram("d0", filter).keySet();
         final Set<Value> expectedKeySet = td[0].getHistogram().keySet();
 
+        // sometimes wrong...
         assertThat(actualKeySet).containsAll(expectedKeySet);
 
         // test histogram values

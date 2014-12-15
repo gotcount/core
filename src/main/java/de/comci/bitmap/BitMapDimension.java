@@ -8,6 +8,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +37,7 @@ public class BitMapDimension<T> implements Dimension<T> {
     public Class<T> getType() {
         return clasz;
     }
-
+    
     @Override
     public String toString() {
         return String.format("Dimension[%s/%s@%d]", name, clasz.getName(), index);
@@ -84,7 +85,13 @@ public class BitMapDimension<T> implements Dimension<T> {
         }).set(row);
         return this;
     }
-
+    
+    public T get(int row) {
+        EWAHCompressedBitmap rb = new EWAHCompressedBitmap();
+        rb.set(row);
+        return bitmap.entrySet().parallelStream().filter(e -> e.getValue().andCardinality(rb) > 0).findAny().get().getKey().getValue();
+    }
+    
     int count(T value) {
         EWAHCompressedBitmap bs = bitmap.get(new Value(value, clasz));
         return (bs != null) ? bs.cardinality() : 0;
@@ -203,6 +210,6 @@ public class BitMapDimension<T> implements Dimension<T> {
     void build() {
         // sort values by cardinality
         sortedMaps.sort((a, b) -> b.getValue().cardinality() - a.getValue().cardinality());
-    }
+    }   
 
 }

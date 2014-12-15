@@ -4,18 +4,28 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.primitives.Ints;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
+import com.googlecode.javaewah.IntIterator;
 import de.comci.histogram.Histogram;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,6 +244,91 @@ public class BitMapCollection {
         LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms with %,d ms for filtering", histogramOp, filterOp));
 
         return histogram;
+    }
+    
+    public Collection<Object[]> getData(int offset, int limit, String... dimensions) {
+        
+        if (offset < 0) {
+            offset = 0;
+        }
+        
+        if (limit < 1) {
+            limit = 100;
+        }
+        
+        if (offset >= size()) {
+            throw new IndexOutOfBoundsException();
+        }
+        
+        List<String> dimensionsList = Arrays.asList(dimensions);
+        
+        List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
+                dimensionsList.stream()
+                        .filter(d -> this.dimensions.containsKey(d))
+                        .map(d -> new HashMap.SimpleEntry<>(d, this.dimensions.get(d)))
+                        .collect(Collectors.toList());
+        
+        int cols = selectedDimensions.size();
+        
+        // create output buffer
+        final List<Object[]> outputBuffer = new LinkedList<>();
+        
+        // grap data from dimensions
+        for (int row = offset; row < size() && row < offset + limit ; row++) {
+            final Object[] tupel = new Object[cols];
+            for (int i = 0; i < cols; i++) {                
+                tupel[i] = selectedDimensions.get(i).getValue().get(row);
+            }
+            outputBuffer.add(tupel);
+        }
+        
+        // return buffer
+        return outputBuffer;
+    }
+    
+    public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, String... dimensions) {
+        
+        if (filter == null || filter.isEmpty()) {
+            return getData(offset, limit, dimensions);
+        }
+        
+        if (offset < 0) {
+            offset = 0;
+        }
+        
+        if (limit < 1) {
+            limit = 100;
+        }
+        
+        if (offset >= size()) {
+            throw new IndexOutOfBoundsException();
+        }
+        
+        EWAHCompressedBitmap bitmapFilter = getFilter(filter);
+        
+        List<String> dimensionsList = Arrays.asList(dimensions);
+        
+        final List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
+                dimensionsList.stream()
+                        .filter(d -> this.dimensions.containsKey(d))
+                        .map(d -> new HashMap.SimpleEntry<>(d, this.dimensions.get(d)))
+                        .collect(Collectors.toList());
+                
+        Collection<Object[]> outputBuffer = new ArrayList<>(bitmapFilter.cardinality());
+        final int cols = selectedDimensions.size();
+        
+        Iterable<Integer> i = () -> bitmapFilter.iterator();
+        Stream<Integer> filteredRows = StreamSupport.stream(i.spliterator(), false);
+                
+        filteredRows.skip(offset).limit(limit).forEach(row -> {
+            final Object[] tupel = new Object[cols];
+            for (int c = 0; c < cols; c++) {                
+                tupel[c] = selectedDimensions.get(c).getValue().get(row);
+            }
+            outputBuffer.add(tupel);
+        });
+                
+        return outputBuffer;
     }
 
     private EWAHCompressedBitmap getFilter(Map<String, Predicate> filters) {
