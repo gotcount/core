@@ -250,50 +250,12 @@ public class BitMapCollection {
         return getData(offset, limit, Arrays.asList(dimensions));
     }
     
-    public Collection<Object[]> getData(int offset, int limit, Collection<String> dimensions) {
-        
-        if (offset < 0) {
-            offset = 0;
-        }
-        
-        if (limit < 1) {
-            limit = 100;
-        }
-        
-        if (offset >= size()) {
-            throw new IndexOutOfBoundsException();
-        }
-        
-        List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
-                dimensions.stream()
-                        .filter(d -> this.dimensions.containsKey(d))
-                        .map(d -> new HashMap.SimpleEntry<>(d, this.dimensions.get(d)))
-                        .collect(Collectors.toList());
-        
-        int cols = selectedDimensions.size();
-        
-        // create output buffer
-        final List<Object[]> outputBuffer = new LinkedList<>();
-        
-        // grap data from dimensions
-        for (int row = offset; row < size() && row < offset + limit ; row++) {
-            final Object[] tupel = new Object[cols];
-            for (int i = 0; i < cols; i++) {                
-                tupel[i] = selectedDimensions.get(i).getValue().get(row);
-            }
-            outputBuffer.add(tupel);
-        }
-        
-        // return buffer
-        return outputBuffer;
+    public Collection<Object[]> getData(int offset, int limit, Collection<String> dimensions) {        
+        return getData(null, offset, limit, dimensions);
     }
     
     public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, Collection<String> dimensions) {
         
-        if (filter == null || filter.isEmpty()) {
-            return getData(offset, limit, dimensions);
-        }
-        
         if (offset < 0) {
             offset = 0;
         }
@@ -306,27 +268,45 @@ public class BitMapCollection {
             throw new IndexOutOfBoundsException();
         }
         
-        EWAHCompressedBitmap bitmapFilter = getFilter(filter);
-        
         final List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
                 dimensions.stream()
-                        .filter(d -> this.dimensions.containsKey(d))
-                        .map(d -> new HashMap.SimpleEntry<>(d, this.dimensions.get(d)))
+                        .filter(d -> this.dimensions.containsKey(d) || d.equals("ROW"))
+                        .map(d -> new HashMap.SimpleEntry<>(d, d.equals("ROW") ? null : this.dimensions.get(d)))
                         .collect(Collectors.toList());
-                
-        Collection<Object[]> outputBuffer = new ArrayList<>(bitmapFilter.cardinality());
+        
         final int cols = selectedDimensions.size();
         
-        Iterable<Integer> i = () -> bitmapFilter.iterator();
-        Stream<Integer> filteredRows = StreamSupport.stream(i.spliterator(), false);
-                
-        filteredRows.skip(offset).limit(limit).forEach(row -> {
-            final Object[] tupel = new Object[cols];
-            for (int c = 0; c < cols; c++) {                
-                tupel[c] = selectedDimensions.get(c).getValue().get(row);
+        Collection<Object[]> outputBuffer;
+        
+        if (filter == null || filter.isEmpty()) {
+            // create output buffer
+            outputBuffer = new LinkedList<>();
+
+            // grap data from dimensions
+            for (int row = offset; row < size() && row < offset + limit ; row++) {
+                final Object[] tupel = new Object[cols];
+                for (int i = 0; i < cols; i++) {
+                    Map.Entry<String, BitMapDimension> dim = selectedDimensions.get(i);
+                    tupel[i] = (dim.getKey().equals("ROW")) ? row : dim.getValue().get(row);
+                }
+                outputBuffer.add(tupel);
             }
-            outputBuffer.add(tupel);
-        });
+        } else {
+            EWAHCompressedBitmap bitmapFilter = getFilter(filter);
+            outputBuffer = new ArrayList<>(bitmapFilter.cardinality());
+
+            Iterable<Integer> i = () -> bitmapFilter.iterator();
+            Stream<Integer> filteredRows = StreamSupport.stream(i.spliterator(), false);
+
+            filteredRows.skip(offset).limit(limit).forEach(row -> {
+                final Object[] tupel = new Object[cols];
+                for (int c = 0; c < cols; c++) {                
+                    Map.Entry<String, BitMapDimension> dim = selectedDimensions.get(c);
+                    tupel[c] = (dim.getKey().equals("ROW")) ? row : dim.getValue().get(row);
+                }
+                outputBuffer.add(tupel);
+            });
+        }
                 
         return outputBuffer;
     }

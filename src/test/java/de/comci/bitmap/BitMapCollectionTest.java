@@ -349,6 +349,55 @@ public class BitMapCollectionTest {
         assertThat(actual.toArray()).containsOnly(expected.toArray());
 
     }
+    
+    @Test
+    public void getDataWithRowNumber() {
+
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
+                .build();
+
+        Collection<Object[]> expected = new LinkedList<>();
+        expected.add(new Object[]{0, 1, 1});
+        expected.add(new Object[]{1, 2, 2});
+        expected.add(new Object[]{2, 3, 1});
+        expected.add(new Object[]{3, 4, 2});
+
+        Collection<Object[]> actual = instance.getData(null, 0, 100, "ROW", "d0", "d1");
+
+        assertThat(actual.toArray()).containsOnly(expected.toArray());
+
+    }
+    
+    @Test
+    public void getDataWithRowNumberFiltered() {
+
+        instance = BitMapCollection.create()
+                .dimension("d0", Integer.class)
+                .dimension("d1", Integer.class)
+                .add(new Object[]{1, 1})
+                .add(new Object[]{2, 2})
+                .add(new Object[]{3, 1})
+                .add(new Object[]{4, 2})
+                .build();
+
+        Collection<Object[]> expected = new LinkedList<>();
+        expected.add(new Object[]{1, 2, 2});
+        expected.add(new Object[]{3, 4, 2});
+
+        Map<String, Predicate> filter = new HashMap<>();
+        filter.put("d1", p -> (int)p == 2);
+        
+        Collection<Object[]> actual = instance.getData(filter, 0, 100, "ROW", "d0", "d1");
+
+        assertThat(actual.toArray()).containsOnly(expected.toArray());
+
+    }
 
     @Test
     public void getDataWithSimpleFilter() {
