@@ -5,17 +5,15 @@
  */
 package de.comci.bitmap;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
+import static org.fest.assertions.api.Assertions.assertThat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.fest.assertions.api.Assertions.*;
 
 /**
  *

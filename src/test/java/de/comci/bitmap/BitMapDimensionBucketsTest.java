@@ -5,8 +5,6 @@
  */
 package de.comci.bitmap;
 
-import static org.fest.assertions.api.Assertions.*;
-
 /**
  *
  * @author Sebastian Maier (sebastian.maier@comci.de)

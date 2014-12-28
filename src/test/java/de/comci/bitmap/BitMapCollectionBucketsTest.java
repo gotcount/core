@@ -7,7 +7,7 @@ package de.comci.bitmap;
 
 import de.comci.histogram.Histogram;
 import de.comci.histogram.LimitedHashHistogram;
-import static org.fest.assertions.api.Assertions.*;
+import static org.fest.assertions.api.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Test;
 

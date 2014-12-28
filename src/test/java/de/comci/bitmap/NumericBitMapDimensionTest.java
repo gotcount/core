@@ -5,7 +5,7 @@
  */
 package de.comci.bitmap;
 
-import static org.fest.assertions.api.Assertions.*;
+import static org.fest.assertions.api.Assertions.assertThat;
 import org.fest.assertions.data.Offset;
 import org.junit.After;
 import org.junit.AfterClass;

@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static org.fest.assertions.api.Assertions.*;
+import static org.fest.assertions.api.Assertions.assertThat;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;

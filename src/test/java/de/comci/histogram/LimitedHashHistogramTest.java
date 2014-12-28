@@ -5,11 +5,9 @@
  */
 package de.comci.histogram;
 
-import java.util.PriorityQueue;
-import java.util.Random;
-import org.junit.Test;
 import static org.fest.assertions.api.Assertions.assertThat;
 import org.junit.Before;
+import org.junit.Test;
 
 /**
  *

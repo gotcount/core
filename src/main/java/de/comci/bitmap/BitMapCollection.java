@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.primitives.Ints;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
-import de.comci.histogram.Histogram;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;

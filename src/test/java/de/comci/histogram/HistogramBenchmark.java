@@ -10,7 +10,6 @@ import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import static org.fest.assertions.api.Assertions.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

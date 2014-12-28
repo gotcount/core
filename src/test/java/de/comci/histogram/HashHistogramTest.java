@@ -5,9 +5,9 @@
  */
 package de.comci.histogram;
 
-import org.junit.Test;
 import static org.fest.assertions.api.Assertions.assertThat;
 import org.junit.Before;
+import org.junit.Test;
 
 /**
  *

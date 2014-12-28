@@ -1,6 +1,5 @@
 package de.comci.bitmap;
 
-import com.google.common.collect.Multimap;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
@@ -10,17 +9,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -105,20 +99,12 @@ public class BitMapDimension<T> implements Dimension<T> {
         return (bs != null) ? bs.cardinality() : 0;
     }
 
-    Histogram<Value<T>> histogram() {
-        return histogramWithoutFilter(null, 0);
-    }
-
     Histogram<Value<T>> histogram(int topN) {
         return histogramWithoutFilter(null, topN);
     }
     
     Histogram<Value<T>> histogram(Map<Value<T>, Predicate> buckets, int topN) {
         return histogramWithoutFilter(buckets, topN);
-    }
-
-    Histogram<Value<T>> histogram(EWAHCompressedBitmap filter) {
-        return histogram(filter, 0);
     }
 
     Histogram<Value<T>> histogram(EWAHCompressedBitmap filter, int topN) {

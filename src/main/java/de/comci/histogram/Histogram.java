@@ -5,7 +5,6 @@
  */
 package de.comci.histogram;
 
-import java.util.Collection;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Stream;

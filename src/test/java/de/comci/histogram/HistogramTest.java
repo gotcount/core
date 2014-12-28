@@ -8,10 +8,10 @@ package de.comci.histogram;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import java.util.NoSuchElementException;
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.fest.assertions.api.Assertions.assertThat;
 
 /**
  *

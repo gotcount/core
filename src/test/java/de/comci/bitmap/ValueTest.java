@@ -5,8 +5,9 @@
  */
 package de.comci.bitmap;
 
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.fest.assertions.api.Assertions.fail;
 import org.junit.Test;
-import static org.fest.assertions.api.Assertions.*;
 
 /**
  *
