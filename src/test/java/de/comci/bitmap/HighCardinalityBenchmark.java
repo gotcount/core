@@ -29,7 +29,7 @@ public class HighCardinalityBenchmark extends AbstractBenchmark {
 
         System.out.println("creating benchmark data");
 
-        CollectionBuilder builder = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .getCollectionBuilder();
@@ -47,7 +47,7 @@ public class HighCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(1);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Histogram<Value> histogram = instance.histogram("d0", 10);
+        final Histogram<Value> histogram = instance.histogram("d0").setLimit(10).build();
         assertThat(histogram.size()).isEqualTo(10);
         
     }
@@ -62,7 +62,7 @@ public class HighCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(1);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Histogram<Value> histogram = instance.histogram("d0", filter, 10);
+        final Histogram<Value> histogram = instance.histogram("d0").setFilters(filter).setLimit(10).build();
         assertThat(histogram.size()).isEqualTo(10);
 
     }

@@ -30,7 +30,7 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
 
         System.out.println("creating benchmark data");
 
-        CollectionBuilder builder = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .getCollectionBuilder();
@@ -48,7 +48,7 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Histogram<Value> histogram = instance.histogram("d0", 10);
+        final Histogram<Value> histogram = instance.histogram("d0").setLimit(10).build();
         assertThat(histogram.size()).isEqualTo(10);
         
     }
@@ -60,7 +60,7 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Histogram<Value> histogram = instance.histogram("d0", -10);
+        final Histogram<Value> histogram = instance.histogram("d0").setLimit(-10).build();
         assertThat(histogram.size()).isEqualTo(10);
         
     }
@@ -85,7 +85,7 @@ public class LowCardinalityBenchmark extends AbstractBenchmark {
         assertThat(instance.count("d0", 1)).isEqualTo(rows / 10);
         assertThat(instance.size()).isEqualTo(rows);
 
-        final Histogram<Value> histogram = instance.histogram("d1", filter, range);
+        final Histogram<Value> histogram = instance.histogram("d1").setFilters(filter).setLimit(range).build();
         assertThat(histogram.size()).isEqualTo(Math.abs(range));
     }
 

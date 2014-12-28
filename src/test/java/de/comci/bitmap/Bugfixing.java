@@ -30,7 +30,7 @@ public class Bugfixing {
     @Test
     public void filterSmallDateColumn() {
 
-        BitMapCollection instance = BitMapCollection.create()
+        BitMapCollection instance = BitMapCollection.builder()
                 .dimension("d0", Date.class)
                 .add(new Object[]{d(LocalDate.now().minusDays(4))})
                 .add(new Object[]{d(LocalDate.now().minusDays(3))})
@@ -50,13 +50,13 @@ public class Bugfixing {
         Map<String, Predicate> filters = new HashMap<>();
         filters.put("d0", p -> Arrays.asList(d(LocalDate.now().minusDays(3)), d(LocalDate.now().minusDays(1))).contains(p));
 
-        assertThat(instance.histogram("d0", filters)).isEqualTo(expected);
+        assertThat(instance.histogram("d0").setFilters(filters).build()).isEqualTo(expected);
     }
 
     @Test
     public void filterDateColumn() {
 
-        CollectionBuilder builder = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.builder()
                 .dimension("d0", LocalDate.class)
                 .getCollectionBuilder();
 
@@ -85,7 +85,7 @@ public class Bugfixing {
         Map<String, Predicate> filters = new HashMap<>();
         filters.put("d0", p -> Arrays.asList(LocalDate.now().minusDays(5), LocalDate.now().minusDays(2), LocalDate.now().minusDays(17)).contains(p));
 
-        assertThat(instance.histogram("d0", filters)).isEqualTo(expected);
+        assertThat(instance.histogram("d0").setFilters(filters).build()).isEqualTo(expected);
 
     }
 

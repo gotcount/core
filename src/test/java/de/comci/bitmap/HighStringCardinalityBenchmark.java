@@ -38,7 +38,7 @@ public class HighStringCardinalityBenchmark extends AbstractBenchmark {
             rndStrings.add(RandomStringUtils.random(20));
         }
         
-        CollectionBuilder builder = BitMapCollection.create()
+        CollectionBuilder builder = BitMapCollection.builder()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
                 .getCollectionBuilder();
@@ -69,7 +69,7 @@ public class HighStringCardinalityBenchmark extends AbstractBenchmark {
     public void histogramWithFilter() {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d0", p -> p.equals(known));
-        Histogram<Value> histogram = instance.histogram("d0", filter, 50);
+        Histogram<Value> histogram = instance.histogram("d0").setFilters(filter).setLimit(50).build();
         assertThat(histogram.keySet()).containsOnly(Value.get(known));
     }
 

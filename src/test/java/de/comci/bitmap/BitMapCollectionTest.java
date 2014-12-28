@@ -60,7 +60,7 @@ public class BitMapCollectionTest {
 
     @Before
     public void setUp() {
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{"123", 123})
@@ -83,7 +83,7 @@ public class BitMapCollectionTest {
      */
     @Test
     public void countSingleValueInDimension() {
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{"123", 123})
@@ -103,7 +103,7 @@ public class BitMapCollectionTest {
 
     @Test
     public void filteredSize() {
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", String.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{"123", 123})
@@ -194,7 +194,7 @@ public class BitMapCollectionTest {
         d0map.set(Value.get("-1"), 1);
         d0map.set(Value.get("3"), 3);
 
-        assertThat(instance.histogram("d0")).isEqualTo(d0map);
+        assertThat(instance.histogram("d0").build()).isEqualTo(d0map);
     }
 
     @Test
@@ -203,7 +203,7 @@ public class BitMapCollectionTest {
         Histogram<Value> d0map = new HashHistogram();
         d0map.set(Value.get("3"), 3);
         d0map.set(Value.get("123"), 2);
-        final Histogram<Value> histogram = instance.histogram("d0", 2);
+        final Histogram<Value> histogram = instance.histogram("d0").setLimit(2).build();
 
         assertThat(histogram).isEqualTo(d0map);
     }
@@ -215,7 +215,7 @@ public class BitMapCollectionTest {
         d0map.set(Value.empty(String.class), 1);
         d0map.set(Value.get(""), 1);
         d0map.set(Value.get("-1"), 1);
-        final Histogram<Value> histogram = instance.histogram("d0", -3);
+        final Histogram<Value> histogram = instance.histogram("d0").setLimit(-3).build();
 
         assertThat(histogram).isEqualTo(d0map);
     }
@@ -230,7 +230,7 @@ public class BitMapCollectionTest {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", v -> (int) v == 1);
 
-        assertThat(instance.histogram("d0", filter)).isEqualTo(d0map);
+        assertThat(instance.histogram("d0").setFilters(filter).build()).isEqualTo(d0map);
     }
 
     @Test
@@ -243,7 +243,7 @@ public class BitMapCollectionTest {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", v -> (int) v < 0);
 
-        assertThat(instance.histogram("d0", filter)).isEqualTo(d0map);
+        assertThat(instance.histogram("d0").setFilters(filter).build()).isEqualTo(d0map);
     }
 
     @Test
@@ -260,7 +260,7 @@ public class BitMapCollectionTest {
         assertThat(filter.get("d1").test(0)).isFalse();
         assertThat(filter.get("d1").test(1)).isTrue();
 
-        assertThat(instance.histogram("d0", filter)).isEqualTo(d0map);
+        assertThat(instance.histogram("d0").setFilters(filter).build()).isEqualTo(d0map);
     }
 
     @Test
@@ -278,7 +278,7 @@ public class BitMapCollectionTest {
     @Test
     public void veryTinyResultset() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -292,7 +292,7 @@ public class BitMapCollectionTest {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", p -> ((int) p) == 2);
 
-        Histogram<Value> actual = instance.histogram("d0", filter, 1);
+        Histogram<Value> actual = instance.histogram("d0").setFilters(filter).setLimit(1).build();
 
         Histogram<Value> expected = new LimitedHashHistogram<>(1);
         expected.set(Value.get(1), 1);
@@ -304,7 +304,7 @@ public class BitMapCollectionTest {
     @Test
     public void filterOnCountDimension() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -316,7 +316,7 @@ public class BitMapCollectionTest {
         Map<String, Predicate> filter = new HashMap<>();
         filter.put("d1", p -> ((int) p) == 1);
 
-        Histogram<Value> actual = instance.histogram("d1", filter, 1);
+        Histogram<Value> actual = instance.histogram("d1").setFilters(filter).setLimit(1).build();
 
         Histogram<Value> expected = new LimitedHashHistogram<>(1);
         expected.set(Value.get(1), 2);
@@ -327,7 +327,7 @@ public class BitMapCollectionTest {
     @Test
     public void getDataWithoutFilter() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -353,7 +353,7 @@ public class BitMapCollectionTest {
     @Test
     public void getDataWithRowNumber() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -377,7 +377,7 @@ public class BitMapCollectionTest {
     @Test
     public void getDataWithRowNumberFiltered() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -402,7 +402,7 @@ public class BitMapCollectionTest {
     @Test
     public void getDataWithSimpleFilter() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -426,7 +426,7 @@ public class BitMapCollectionTest {
     @Test
     public void getDataPaged() {
 
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -448,7 +448,7 @@ public class BitMapCollectionTest {
     @Test
     public void getDataPagedWithFilter() {
         
-        instance = BitMapCollection.create()
+        instance = BitMapCollection.builder()
                 .dimension("d0", Integer.class)
                 .dimension("d1", Integer.class)
                 .add(new Object[]{1, 1})
@@ -494,7 +494,7 @@ public class BitMapCollectionTest {
     }
 
     private void sizeTestN(int size) {
-        DimensionBuilder builder = BitMapCollection.create()
+        DimensionBuilder builder = BitMapCollection.builder()
                 .dimension("d0", String.class)
                 .dimension("d1", String.class)
                 .dimension("d2", String.class)
@@ -531,9 +531,9 @@ public class BitMapCollectionTest {
 
         // all values in histogram
         Map<String, Predicate> filter = new HashMap<>();
-        filter.put("d3", v -> (int) v > (int) td[3].values[2]);
+        //filter.put("d3", v -> (int) v > (int) td[3].values[2]);
 
-        final Set<Value> actualKeySet = instance.histogram("d0", filter).keySet();
+        final Set<Value> actualKeySet = instance.histogram("d0").setFilters(filter).build().keySet();
         final Set<Value> expectedKeySet = td[0].getHistogram().keySet();
 
         // sometimes wrong...
@@ -541,7 +541,7 @@ public class BitMapCollectionTest {
 
         // test histogram values
         for (int i = 0; i < 7; i++) {
-            assertThat(instance.histogram("d" + i)).isEqualTo(td[i].getHistogram());
+            assertThat(instance.histogram("d" + i).build()).isEqualTo(td[i].getHistogram());
         }
 
         // multi filter

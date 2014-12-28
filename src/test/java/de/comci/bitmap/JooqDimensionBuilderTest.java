@@ -139,7 +139,7 @@ public class JooqDimensionBuilderTest {
         hist.set(Value.get("b name"), 2);
         
         JooqDimensionBuilder instance = new JooqDimensionBuilder(connection, "test", SQLDialect.MYSQL);
-        assertThat(instance.getCollectionBuilder().build().histogram("name")).isEqualTo(hist);        
+        assertThat(instance.getCollectionBuilder().build().histogram("name").build()).isEqualTo(hist);        
         
     }
     
@@ -209,7 +209,7 @@ public class JooqDimensionBuilderTest {
         expected.set(new Value(getDate(2012, 1, 4, 0, 0, 0, 0), Date.class), 2);
         expected.set(new Value(getDate(2012, 1, 2, 0, 0, 0, 0), Date.class), 1);
         
-        assertThat(collection.histogram("date")).isEqualTo(expected);
+        assertThat(collection.histogram("date").build()).isEqualTo(expected);
 
     }
     
