@@ -176,74 +176,10 @@ public class BitMapCollection {
 
         return filter.cardinality();
     }
-    
+
     public HistogramBuilder histogram(String dimension) {
         return new HistogramBuilder(dimension, this);
     }
-
-    /**
-     * Get histogram for single dimension
-     *
-     * @param <T> type of the dimensions values, must be constistent with
-     * {@link Dimension#clasz}
-     * @param dimension name of the dimension
-     * @return a Map<T, Integer> with the count for each value within dimension
-     * @throws NoSuchElementException if no dimension with the given name exists
-     */
-//    Histogram<Value> histogram(String dimension) {
-//        return histogram(dimension, 0);
-//    }
-    
-//    Histogram<Value> histogramWithoutFilterButWithLimit(String dimension, int limit) {
-//    
-//        checkReadyState(dimension);
-//
-//        long start = System.currentTimeMillis();
-//        final Histogram<Value> histogram = getDimension(dimension).histogram(limit);
-//        long histogramOp = System.currentTimeMillis() - start;
-//
-//        LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms without filter", histogramOp));
-//
-//        return histogram;
-//    }
-
-    /**
-     * Get histogram for single dimension
-     *
-     * @param <T> type of the dimensions values, must be constistent with
-     * {@link Dimension#clasz}
-     * @param dimension name of the dimension
-     * @param filters the Map of filters to be applied to the other dimensions
-     * @return a Map<T, Integer> with the count for each value within dimension
-     * where the given filters apply
-     * @throws NoSuchElementException if no dimension with the given name exists
-     * @throws IllegalArgumentException if the selected dimension is part of the
-     * filters
-     */
-//    public Histogram<Value> histogram(String dimension, Map<String, Predicate> filters) {
-//        return histogram(dimension, filters, 0);
-//    }
-
-//    Histogram<Value> histogram(String dimension, Map<String, Predicate> filters, int topN) {
-//
-//        if (filters == null || filters.isEmpty()) {
-//            return histogram(dimension, topN);
-//        }
-//
-//        checkReadyState(dimension);
-//
-//        long start = System.currentTimeMillis();
-//        EWAHCompressedBitmap filter = getFilter(filters);
-//        long filterOp = System.currentTimeMillis() - start;
-//
-//        start = System.currentTimeMillis();
-//        final Histogram histogram = getDimension(dimension).histogram(filter, topN);
-//        long histogramOp = System.currentTimeMillis() - start;
-//
-//        LOG.info(String.format(Locale.ENGLISH, "histogram created in %,d ms with %,d ms for filtering", histogramOp, filterOp));
-//
-//        return histogram;
-//    }
 
     Dimension getDimension(String name) {
         if (!dimensions.containsKey(name)) {
@@ -251,45 +187,45 @@ public class BitMapCollection {
         }
         return dimensions.get(name);
     }
-    
+
     public Collection<Object[]> getData(int offset, int limit, String... dimensions) {
         return getData(offset, limit, Arrays.asList(dimensions));
     }
-    
-    public Collection<Object[]> getData(int offset, int limit, Collection<String> dimensions) {        
+
+    public Collection<Object[]> getData(int offset, int limit, Collection<String> dimensions) {
         return getData(null, offset, limit, dimensions);
     }
-    
+
     public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, Collection<String> dimensions) {
-        
+
         if (offset < 0) {
             offset = 0;
         }
-        
+
         if (limit < 1) {
             limit = 100;
         }
-        
+
         if (offset >= size()) {
             throw new IndexOutOfBoundsException();
         }
-        
-        final List<Map.Entry<String, BitMapDimension>> selectedDimensions = 
-                dimensions.stream()
-                        .filter(name -> this.dimensions.containsKey(name) || name.equals("ROW"))
-                        .map(name -> new HashMap.SimpleEntry<>(name, name.equals("ROW") ? null : this.dimensions.get(name)))
-                        .collect(Collectors.toList());
-        
+
+        final List<Map.Entry<String, BitMapDimension>> selectedDimensions
+                = dimensions.stream()
+                .filter(name -> this.dimensions.containsKey(name) || name.equals("ROW"))
+                .map(name -> new HashMap.SimpleEntry<>(name, name.equals("ROW") ? null : this.dimensions.get(name)))
+                .collect(Collectors.toList());
+
         final int cols = selectedDimensions.size();
-        
+
         Collection<Object[]> outputBuffer;
-        
+
         if (filter == null || filter.isEmpty()) {
             // create output buffer
             outputBuffer = new LinkedList<>();
 
             // grap data from dimensions
-            for (int row = offset; row < size() && row < offset + limit ; row++) {
+            for (int row = offset; row < size() && row < offset + limit; row++) {
                 final Object[] tupel = new Object[cols];
                 for (int i = 0; i < cols; i++) {
                     Map.Entry<String, BitMapDimension> dim = selectedDimensions.get(i);
@@ -306,35 +242,35 @@ public class BitMapCollection {
 
             filteredRows.skip(offset).limit(limit).forEach(row -> {
                 final Object[] tupel = new Object[cols];
-                for (int c = 0; c < cols; c++) {                
+                for (int c = 0; c < cols; c++) {
                     Map.Entry<String, BitMapDimension> dim = selectedDimensions.get(c);
                     tupel[c] = (dim.getKey().equals("ROW")) ? row : dim.getValue().get(row);
                 }
                 outputBuffer.add(tupel);
             });
         }
-                
+
         return outputBuffer;
     }
-    
+
     public Collection<Object[]> getData(Map<String, Predicate> filter, int offset, int limit, String... dimensions) {
-        
+
         return getData(filter, offset, limit, Arrays.asList(dimensions));
     }
-    
+
     /**
      * Get a {@link EWAHCompressedBitmap} as the result of applying all provided
-     * filters on their respective dimensions. 
-     * 
+     * filters on their respective dimensions.
+     *
      * @param filters
-     * @return 
+     * @return
      */
     EWAHCompressedBitmap getFilter(Map<String, Predicate> filters) {
         EWAHCompressedBitmap filter = EWAHCompressedBitmap.and(
                 dimensions.entrySet().parallelStream()
-                    .filter(e -> filters.containsKey(e.getKey()))
-                    .map(e -> e.getValue().filter(filters.get(e.getKey())))
-                    .toArray(s -> new EWAHCompressedBitmap[s])
+                .filter(e -> filters.containsKey(e.getKey()))
+                .map(e -> e.getValue().filter(filters.get(e.getKey())))
+                .toArray(s -> new EWAHCompressedBitmap[s])
         );
         return filter;
     }
