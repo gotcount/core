@@ -1,5 +1,12 @@
 package de.comci.bitmap;
 
+import com.google.common.cache.AbstractLoadingCache;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.googlecode.javaewah.EWAHCompressedBitmap;
 import de.comci.histogram.HashHistogram;
 import de.comci.histogram.Histogram;
@@ -12,9 +19,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -39,7 +53,7 @@ public class BitMapDimension<T> implements Dimension<T> {
     public Class<T> getType() {
         return clasz;
     }
-    
+
     @Override
     public String toString() {
         return String.format("Dimension[%s/%s@%d]", name, clasz.getName(), index);
@@ -87,13 +101,13 @@ public class BitMapDimension<T> implements Dimension<T> {
         }).set(row);
         return this;
     }
-    
+
     public T get(int row) {
         EWAHCompressedBitmap rb = new EWAHCompressedBitmap();
         rb.set(row);
         return bitmap.entrySet().parallelStream().filter(e -> e.getValue().andCardinality(rb) > 0).findAny().get().getKey().getValue();
     }
-    
+
     int count(T value) {
         EWAHCompressedBitmap bs = bitmap.get(new Value(value, clasz));
         return (bs != null) ? bs.cardinality() : 0;
@@ -102,7 +116,7 @@ public class BitMapDimension<T> implements Dimension<T> {
     Histogram<Value<T>> histogram(int topN) {
         return histogramWithoutFilter(null, topN);
     }
-    
+
     Histogram<Value<T>> histogram(Map<Value<T>, Predicate> buckets, int topN) {
         return histogramWithoutFilter(buckets, topN);
     }
@@ -110,7 +124,7 @@ public class BitMapDimension<T> implements Dimension<T> {
     Histogram<Value<T>> histogram(EWAHCompressedBitmap filter, int topN) {
         return histogramWithFilter(filter, null, topN);
     }
-    
+
     Histogram<Value<T>> histogram(EWAHCompressedBitmap filter, Map<Value<T>, Predicate> buckets, int topN) {
         return histogramWithFilter(filter, buckets, topN);
     }
@@ -137,7 +151,7 @@ public class BitMapDimension<T> implements Dimension<T> {
         Histogram<Value<T>> histogram = new LimitedHashHistogram<>(limit);
 
         Collection<Map.Entry<Value<T>, EWAHCompressedBitmap>> sublist;
-        
+
         if (buckets == null || buckets.isEmpty()) {
             if (limit > 0) {
                 sublist = sortedMaps.subList(0, Math.min(limit, sortedMaps.size()));
@@ -163,13 +177,13 @@ public class BitMapDimension<T> implements Dimension<T> {
 
         Histogram<Value<T>> histogram = new HashHistogram<>();
 
-        Comparator<Map.Entry<Value<T>,Integer>> c;
+        Comparator<Map.Entry<Value<T>, Integer>> c;
         if (limit >= 0) {
-            c = (a,b) -> b.getValue() - a.getValue();
+            c = (a, b) -> b.getValue() - a.getValue();
         } else {
-            c = (a,b) -> a.getValue() - b.getValue();
+            c = (a, b) -> a.getValue() - b.getValue();
         }
-        
+
         // get original bitmap OR bucket bitmaps
         Collection<Map.Entry<Value<T>, EWAHCompressedBitmap>> bitmaps;
         if (buckets == null || buckets.isEmpty()) {
@@ -177,16 +191,16 @@ public class BitMapDimension<T> implements Dimension<T> {
         } else {
             bitmaps = getBuckets(buckets);
         }
-        
+
         Stream<AbstractMap.SimpleEntry<Value<T>, Integer>> stream = bitmaps.parallelStream()
                 .map(e -> new HashMap.SimpleEntry<>(e.getKey(), filter.andCardinality(e.getValue())))
                 .filter(e -> e.getValue() > 0)
                 .sorted(c);
-            
-        if (limit != 0) {            
+
+        if (limit != 0) {
             stream = stream.limit(Math.abs(limit));
         }
-        
+
         stream.forEach(e -> {
             histogram.set(e.getKey(), e.getValue());
         });
@@ -194,30 +208,34 @@ public class BitMapDimension<T> implements Dimension<T> {
         return histogram;
     }
 
-    private Collection<Map.Entry<Value<T>, EWAHCompressedBitmap>> getBuckets(Map<Value<T>, Predicate> buckets) {
-        Collection<Map.Entry<Value<T>, EWAHCompressedBitmap>> bitmaps;
-        ConcurrentMap<Value<T>, EWAHCompressedBitmap> calculatedBuckets = new ConcurrentHashMap<>();
-        this.bitmap.entrySet().stream().forEach((e) -> {
-            final T currentValue = e.getKey().getValue();
-            boolean found = false;
-            for (Map.Entry<Value<T>,Predicate> b : buckets.entrySet()) {
-                if (b.getValue().test(currentValue)) {
-                    // value assigned to at least one bucket
-                    // a value will be assigned to only one bucket
-                    calculatedBuckets.compute(b.getKey(), (k,v) -> {
-                        return (v == null) ? e.getValue() : e.getValue().or(v);
-                    });
-                    found = true;
-                    break;
+    private final LoadingCache<Map.Entry<Value<T>,Predicate>, EWAHCompressedBitmap> bucketCache = CacheBuilder.newBuilder()
+            .maximumSize(20)
+            .expireAfterAccess(1, TimeUnit.HOURS)
+            .build(new CacheLoader<Map.Entry<Value<T>,Predicate>, EWAHCompressedBitmap>() {
+
+                @Override
+                public EWAHCompressedBitmap load(Map.Entry<Value<T>,Predicate> key) throws Exception {
+                     return EWAHCompressedBitmap.or(
+                        bitmap.entrySet().parallelStream()
+                            .filter(e -> key.getValue().test(e.getKey().getValue()))
+                            .map(e -> e.getValue())
+                            .toArray(size -> new EWAHCompressedBitmap[size])
+                     );
                 }
-            }            
-            if (!found) {
-                // values not assigned to any bucket
-                calculatedBuckets.compute(Value.bucket(e.getKey().getType(), ""), (k,v) -> (v == null) ? e.getValue() : e.getValue().or(v));
-            }            
-        });
-        bitmaps = calculatedBuckets.entrySet();
-        return bitmaps;
+
+            });
+
+    private Collection<Map.Entry<Value<T>, EWAHCompressedBitmap>> getBuckets(Map<Value<T>, Predicate> buckets) {
+
+        return buckets.entrySet().parallelStream().map((Map.Entry<Value<T>, Predicate> e) -> {
+            Map.Entry<Value<T>,EWAHCompressedBitmap> r = null;
+            try {
+                r = new HashMap.SimpleEntry<>(e.getKey(), bucketCache.get(e));
+            } catch (ExecutionException ex) {
+                // oops
+            }
+            return r;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -228,6 +246,6 @@ public class BitMapDimension<T> implements Dimension<T> {
     void build() {
         // sort values by cardinality
         sortedMaps.sort((a, b) -> b.getValue().cardinality() - a.getValue().cardinality());
-    }   
+    }
 
 }

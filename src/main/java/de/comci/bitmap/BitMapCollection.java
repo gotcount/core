@@ -181,7 +181,7 @@ public class BitMapCollection {
         return new HistogramBuilder(dimension, this);
     }
 
-    Dimension getDimension(String name) {
+    public Dimension getDimension(String name) {
         if (!dimensions.containsKey(name)) {
             throw new NoSuchElementException(String.format("no dimension with name '%s' exists", name));
         }
