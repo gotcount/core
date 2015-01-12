@@ -76,6 +76,12 @@
             <version>2.6</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.184</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <properties>
@@ -93,10 +99,10 @@
                 <configuration>
                     <encoding>UTF-8</encoding>
                     <systemProperties>
-                        <property>                            
+                        <property>
                         </property>
                     </systemProperties>
-                    <argLine>-Xmx20g -Xms8g -Xverify:none</argLine>
+                    <argLine>-Xmx20g -Xms8g -Xverify:none -Djub.consumers=CONSOLE,H2 -Djub.db.file=.benchmarks</argLine>
                 </configuration>
             </plugin>
         </plugins>
