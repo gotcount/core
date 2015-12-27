@@ -15,6 +15,11 @@ public interface DimensionBuilder {
     
     public DimensionBuilder dimension(String name, Class type, Double precision);
         
+    /**
+     * Add a data row
+     * @param data
+     * @return 
+     */
     public CollectionBuilder add(Object... data);
     
     public CollectionBuilder getCollectionBuilder();
